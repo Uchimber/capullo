@@ -185,8 +185,6 @@ export async function rescheduleBooking(id: string, newStartTime: Date) {
   })
 
   if (!booking) throw new Error('Захиалга олдсонгүй')
-// ... (omitting identical rest of the code in replacement chunks for brevity if not changing but here I change) 
-// wait, I need to include the whole thing I want to keep
   const endTime = new Date(newStartTime.getTime() + booking.service.duration * 60000)
 
   // Overlap check for rescheduling too
