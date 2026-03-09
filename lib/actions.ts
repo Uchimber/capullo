@@ -74,6 +74,62 @@ export async function deleteService(id: string) {
   revalidatePath('/')
 }
 
+// BOOKINGS QUERY (with pagination, filter, search)
+export async function getBookings(params: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+}) {
+  await checkAdmin()
+  const page = params.page || 1
+  const limit = params.limit || 15
+  const skip = (page - 1) * limit
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = {}
+  
+  if (params.status && params.status !== 'ALL') {
+    where.status = params.status
+  }
+
+  if (params.search && params.search.trim()) {
+    const q = params.search.trim()
+    where.OR = [
+      { customerName: { contains: q, mode: 'insensitive' } },
+      { customerPhone: { contains: q, mode: 'insensitive' } },
+    ]
+  }
+
+  const [bookings, total] = await Promise.all([
+    prisma.booking.findMany({
+      where,
+      orderBy: { startTime: 'desc' },
+      include: { service: true },
+      skip,
+      take: limit,
+    }),
+    prisma.booking.count({ where }),
+  ])
+
+  return {
+    bookings: JSON.parse(JSON.stringify(bookings)), // Serialize dates
+    total,
+    pages: Math.ceil(total / limit),
+    page,
+  }
+}
+
+// For scheduler auto-refresh
+export async function getAdminBookings() {
+  await checkAdmin()
+  const bookings = await prisma.booking.findMany({
+    include: { service: true },
+    orderBy: { startTime: 'asc' },
+  })
+  return JSON.parse(JSON.stringify(bookings))
+}
+
 // BOOKINGS
 export async function createBooking(data: {
   serviceId: string;

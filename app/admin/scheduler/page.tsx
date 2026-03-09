@@ -1,5 +1,7 @@
-import { prisma } from "@/lib/prisma";
 import AdminSchedulerClient from "@/components/AdminSchedulerClient";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = 'force-dynamic';
 
 export default async function AdminSchedulerPage() {
   const [services, bookings] = await Promise.all([

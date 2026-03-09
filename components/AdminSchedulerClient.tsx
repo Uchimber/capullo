@@ -16,6 +16,7 @@ import {
   rescheduleBooking,
   updateBookingStatus,
   blockSlot,
+  getAdminBookings,
 } from "@/lib/actions";
 import {
   Plus,
@@ -66,6 +67,7 @@ export default function AdminSchedulerClient({
   const [availableSlots, setAvailableSlots] = useState<Date[]>([]);
   const [loading, setLoading] = useState(false);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
+  const [allBookings, setAllBookings] = useState<Booking[]>(initialBookings);
 
   const [formData, setFormData] = useState({
     serviceId: services[0]?.id || "",
@@ -76,9 +78,23 @@ export default function AdminSchedulerClient({
 
   const dates = Array.from({ length: 7 }, (_, i) => addDays(baseDate, i));
 
-  const currentDayBookings = initialBookings.filter((b) =>
+  const currentDayBookings = allBookings.filter((b) =>
     isSameDay(new Date(b.startTime), selectedDate),
   );
+
+  // Auto-refresh bookings every 15 seconds
+  useEffect(() => {
+    async function refreshBookings() {
+      try {
+        const fresh = await getAdminBookings();
+        setAllBookings(fresh);
+      } catch (err) {
+        console.error('Failed to refresh bookings:', err);
+      }
+    }
+    const interval = setInterval(refreshBookings, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     async function fetchSlots() {
@@ -93,7 +109,7 @@ export default function AdminSchedulerClient({
       setLoading(false);
     }
     fetchSlots();
-  }, [selectedDate, formData.serviceId, initialBookings]);
+  }, [selectedDate, formData.serviceId, allBookings]);
 
   const handleManualBooking = async (e: React.FormEvent) => {
     e.preventDefault();
