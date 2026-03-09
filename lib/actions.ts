@@ -127,6 +127,69 @@ export async function createBooking(data: {
   return booking
 }
 
+// Combined: Create Booking + Pay in one action
+// This is called when public user clicks "Pay" button
+// Booking only exists in DB after this function is called
+export async function createBookingAndPay(data: {
+  serviceId: string;
+  customerName: string;
+  customerPhone: string;
+  startTime: Date;
+}) {
+  try {
+    const service = await prisma.service.findUnique({
+      where: { id: data.serviceId }
+    })
+
+    if (!service) {
+      return { success: false, error: 'Үйлчилгээ олдсонгүй' }
+    }
+
+    const startTime = new Date(data.startTime)
+    const endTime = new Date(startTime.getTime() + service.duration * 60000)
+
+    // Check for overlap
+    const existingBooking = await prisma.booking.findFirst({
+      where: {
+        status: { in: ['PAID', 'CONFIRMED', 'BLOCKED'] },
+        startTime: { lt: endTime },
+        endTime: { gt: startTime }
+      }
+    })
+
+    if (existingBooking) {
+      return { success: false, error: 'Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.' }
+    }
+
+    // Create the booking NOW (when user clicks Pay)
+    const booking = await prisma.booking.create({
+      data: {
+        serviceId: data.serviceId,
+        customerName: data.customerName,
+        customerPhone: data.customerPhone,
+        startTime,
+        endTime,
+        status: 'PENDING'
+      }
+    })
+
+    // Create invoice via Bonum
+    const invoiceResult = await createBonumInvoice(booking.id)
+
+    if (!invoiceResult.success) {
+      // If invoice creation failed, delete the booking so it doesn't block the slot
+      await prisma.booking.delete({ where: { id: booking.id } })
+      return { success: false, error: invoiceResult.error || 'Төлбөрийн нэхэмжлэх үүсгэж чадсангүй.' }
+    }
+
+    return { success: true, followUpLink: invoiceResult.followUpLink }
+  } catch (err) {
+    const error = err as Error
+    console.error('createBookingAndPay error:', error)
+    return { success: false, error: `Системд алдаа гарлаа: ${error.message}` }
+  }
+}
+
 export async function blockSlot(data: {
   serviceId: string;
   startTime: Date;

@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { notFound, redirect } from "next/navigation";
-import { createBooking } from "@/lib/actions";
+import { notFound } from "next/navigation";
 import { Clock, ArrowLeft, Sparkles } from "lucide-react";
 import Link from "next/link";
 import BookingForm from "@/components/BookingForm";
@@ -16,26 +15,6 @@ export default async function BookingPage({
   });
 
   if (!service) notFound();
-
-  async function handleBookingAction(formData: FormData) {
-    "use server";
-    const name = formData.get("name") as string;
-    const phone = formData.get("phone") as string;
-    const startTimeStamp = formData.get("startTime") as string;
-
-    if (!startTimeStamp) throw new Error("Цаг сонгоно уу");
-
-    const startTime = new Date(startTimeStamp);
-
-    const booking = await createBooking({
-      serviceId,
-      customerName: name,
-      customerPhone: phone,
-      startTime,
-    });
-
-    redirect(`/book/payment/${booking.id}`);
-  }
 
   return (
     <div className="min-h-screen bg-cream flex flex-col">
@@ -112,10 +91,7 @@ export default async function BookingPage({
               Таны <span className="text-mauve">мэдээлэл</span>
             </h3>
 
-            <BookingForm
-              serviceId={serviceId}
-              handleBookingAction={handleBookingAction}
-            />
+            <BookingForm serviceId={serviceId} />
           </div>
         </div>
       </main>

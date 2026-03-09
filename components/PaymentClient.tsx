@@ -1,9 +1,17 @@
 'use client'
 
 import { useState } from "react";
-import { createBonumInvoice } from "@/lib/actions";
+import { createBookingAndPay } from "@/lib/actions";
 import { CreditCard, ShieldCheck, Loader2, ExternalLink, Sparkles } from "lucide-react";
 import Link from "next/link";
+
+interface PendingBookingData {
+  serviceId: string;
+  customerName: string;
+  customerPhone: string;
+  startTime: string;
+  serviceDuration: number;
+}
 
 interface Props {
   booking: {
@@ -13,9 +21,10 @@ interface Props {
       price: number;
     };
   };
+  pendingBookingData?: PendingBookingData;
 }
 
-export default function PaymentClient({ booking }: Props) {
+export default function PaymentClient({ booking, pendingBookingData }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,13 +32,32 @@ export default function PaymentClient({ booking }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const result = await createBonumInvoice(booking.id);
-      
-      if (result.success && result.followUpLink) {
-        window.location.href = result.followUpLink;
+      if (pendingBookingData) {
+        // NEW FLOW: Create booking + invoice together
+        const result = await createBookingAndPay({
+          serviceId: pendingBookingData.serviceId,
+          customerName: pendingBookingData.customerName,
+          customerPhone: pendingBookingData.customerPhone,
+          startTime: new Date(pendingBookingData.startTime),
+        });
+        
+        if (result.success && result.followUpLink) {
+          window.location.href = result.followUpLink;
+        } else {
+          setError(result.error || 'Төлбөрийн холбоос үүсгэж чадсангүй.');
+          setLoading(false);
+        }
       } else {
-        setError(result.error || 'Төлбөрийн холбоос үүсгэж чадсангүй.');
-        setLoading(false);
+        // LEGACY FLOW: Booking already exists (e.g. from admin)
+        const { createBonumInvoice } = await import("@/lib/actions");
+        const result = await createBonumInvoice(booking.id);
+        
+        if (result.success && result.followUpLink) {
+          window.location.href = result.followUpLink;
+        } else {
+          setError(result.error || 'Төлбөрийн холбоос үүсгэж чадсангүй.');
+          setLoading(false);
+        }
       }
     } catch (err) {
       console.error(err);

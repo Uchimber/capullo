@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { User, Phone, Loader2, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { format, addDays, startOfDay, startOfWeek, subDays, isSameDay, isBefore } from "date-fns";
 import { mn } from "date-fns/locale";
@@ -8,10 +9,10 @@ import { getAvailableSlots } from "@/lib/actions";
 
 interface Props {
   serviceId: string;
-  handleBookingAction: (formData: FormData) => Promise<void>;
 }
 
-export default function BookingForm({ serviceId, handleBookingAction }: Props) {
+export default function BookingForm({ serviceId }: Props) {
+  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   const [baseDate, setBaseDate] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [slots, setSlots] = useState<Date[]>([]);
@@ -42,11 +43,24 @@ export default function BookingForm({ serviceId, handleBookingAction }: Props) {
 
     try {
       const formData = new FormData(e.currentTarget);
-      await handleBookingAction(formData);
+      const name = formData.get("name") as string;
+      const phone = formData.get("phone") as string;
+      const startTime = selectedSlot.toISOString();
+
+      // Navigate to payment page with booking details as query params  
+      // NO database record is created at this point
+      const params = new URLSearchParams({
+        serviceId,
+        name,
+        phone,
+        startTime,
+      });
+      
+      router.push(`/book/payment/new?${params.toString()}`);
     } catch (err) {
       const error = err as Error;
       console.error(error);
-      setError(error.message || 'Төлбөрийн системтэй холбогдоход алдаа гарлаа.');
+      setError(error.message || 'Алдаа гарлаа.');
       setIsSubmitting(false);
     }
   };
@@ -164,8 +178,6 @@ export default function BookingForm({ serviceId, handleBookingAction }: Props) {
           )}
         </div>
       </div>
-
-      <input type="hidden" name="startTime" value={selectedSlot?.toISOString() || ""} />
 
       <div className="space-y-5 pt-2">
         <div className="space-y-2 group">
