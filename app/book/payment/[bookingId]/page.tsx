@@ -1,19 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import PaymentClient from "@/components/PaymentClient";
+import Link from "next/link";
 
 export default async function PaymentPage({
   params,
 }: {
   params: Promise<{ bookingId: string }>;
 }) {
-  let bookingId: string | undefined = undefined;
   try {
     const resolvedParams = await params;
-    bookingId = resolvedParams.bookingId;
+    const bookingId = resolvedParams.bookingId;
     
     if (!bookingId) {
-      console.error('PaymentPage: bookingId is missing from params');
       return notFound();
     }
 
@@ -23,24 +22,47 @@ export default async function PaymentPage({
     });
 
     if (!booking) {
-      console.warn(`PaymentPage: Booking ${bookingId} not found`);
-      return notFound();
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-cream p-6">
+          <div className="bg-white p-8 rounded-2xl shadow-lg border border-rose-soft/40 text-center space-y-4 max-w-sm">
+            <p className="text-mauve font-bold text-lg">Захиалга олдсонгүй</p>
+            <p className="text-xs text-dusty">Энэ захиалга устгагдсан эсвэл хугацаа нь дууссан байна.</p>
+            <Link href="/" className="inline-block bg-mauve text-white px-6 py-2 rounded-xl font-bold text-sm">
+              Шинээр захиалах
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
+    // If already paid, redirect to success
+    if (booking.status === 'PAID') {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-cream p-6">
+          <div className="bg-white p-8 rounded-2xl shadow-lg border border-emerald-100 text-center space-y-4 max-w-sm">
+            <p className="text-emerald-600 font-bold text-lg">Төлбөр төлөгдсөн</p>
+            <p className="text-xs text-dusty">Энэ захиалгын төлбөр аль хэдийн төлөгдсөн байна.</p>
+            <Link href={`/book/success/${bookingId}`} className="inline-block bg-mauve text-white px-6 py-2 rounded-xl font-bold text-sm">
+              Дэлгэрэнгүй харах
+            </Link>
+          </div>
+        </div>
+      );
     }
 
     return <PaymentClient booking={booking} />;
   } catch (err) {
-    console.error(`PaymentPage error for ID ${bookingId}:`, err);
-    // In production, this might still show a generic error, 
-    // but at least we've caught it and logged it on the server.
+    console.error('PaymentPage error:', err);
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream p-6">
         <div className="bg-white p-8 rounded-2xl shadow-lg border border-red-100 text-center space-y-4 max-w-sm">
           <p className="text-red-500 font-bold">Уучлаарай, алдаа гарлаа.</p>
           <p className="text-xs text-dusty">Захиалгын мэдээллийг ачаалахад алдаа гарлаа. Та дахин оролдоно уу.</p>
-          <a href="/" className="inline-block bg-mauve text-white px-6 py-2 rounded-xl font-bold text-sm">Нүүр хуудас руу буцах</a>
+          <Link href="/" className="inline-block bg-mauve text-white px-6 py-2 rounded-xl font-bold text-sm">
+            Нүүр хуудас руу буцах
+          </Link>
         </div>
       </div>
     );
   }
 }
-

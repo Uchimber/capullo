@@ -137,6 +137,12 @@ export async function createBookingAndPay(data: {
   startTime: Date;
 }) {
   try {
+    // Validate phone: must be exactly 8 digits
+    const phoneClean = data.customerPhone.replace(/\s/g, '')
+    if (!/^\d{8}$/.test(phoneClean)) {
+      return { success: false, error: 'Утасны дугаар 8 оронтой тоо байх ёстой.' }
+    }
+
     const service = await prisma.service.findUnique({
       where: { id: data.serviceId }
     })
@@ -148,12 +154,21 @@ export async function createBookingAndPay(data: {
     const startTime = new Date(data.startTime)
     const endTime = new Date(startTime.getTime() + service.duration * 60000)
 
-    // Check for overlap
+    const activeWindow = new Date(Date.now() - 10 * 60 * 1000) // 10 min
+
+    // Check for overlap with paid/confirmed/blocked AND active pending bookings
     const existingBooking = await prisma.booking.findFirst({
       where: {
-        status: { in: ['PAID', 'CONFIRMED', 'BLOCKED'] },
         startTime: { lt: endTime },
-        endTime: { gt: startTime }
+        endTime: { gt: startTime },
+        OR: [
+          { status: { in: ['PAID', 'CONFIRMED', 'BLOCKED'] } },
+          {
+            status: 'PENDING',
+            paymentId: { not: null },
+            createdAt: { gte: activeWindow }
+          }
+        ]
       }
     })
 

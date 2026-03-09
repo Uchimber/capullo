@@ -44,8 +44,15 @@ export default function BookingForm({ serviceId }: Props) {
     try {
       const formData = new FormData(e.currentTarget);
       const name = formData.get("name") as string;
-      const phone = formData.get("phone") as string;
+      const phone = (formData.get("phone") as string).replace(/\s/g, '');
       const startTime = selectedSlot.toISOString();
+
+      // Validate phone: exactly 8 digits
+      if (!/^\d{8}$/.test(phone)) {
+        setError('Утасны дугаар 8 оронтой тоо байх ёстой.');
+        setIsSubmitting(false);
+        return;
+      }
 
       // Navigate to payment page with booking details as query params  
       // NO database record is created at this point
@@ -205,8 +212,11 @@ export default function BookingForm({ serviceId }: Props) {
               name="phone"
               required
               type="tel"
+              pattern="[0-9]{8}"
+              maxLength={8}
+              minLength={8}
               className="w-full bg-blush/30 border-0 border-b-2 border-transparent focus:border-mauve focus:bg-white px-10 py-3.5 rounded-xl text-sm font-semibold transition-all outline-none text-foreground placeholder:text-dusty/50"
-              placeholder="Утасны дугаараа оруулна уу"
+              placeholder="8 оронтой дугаар"
             />
           </div>
         </div>
