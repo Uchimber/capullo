@@ -12,7 +12,7 @@ import {
 } from 'date-fns'
 
 import { auth } from '@clerk/nextjs/server'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 async function checkAdmin() {
   const session = await auth()
@@ -377,7 +377,11 @@ export async function createBonumInvoice(bookingId: string) {
   const { accessToken } = await authRes.json()
 
   // 2. Create Invoice
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+  const headersList = await headers()
+  const host = headersList.get('x-forwarded-host') || headersList.get('host')
+  const protocol = headersList.get('x-forwarded-proto') || 'http'
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`
+  
   const body = {
     amount: booking.service.price,
     callback: `${baseUrl}/api/webhook/bonum?bookingId=${booking.id}`,
