@@ -34,7 +34,7 @@ export default async function BookingPage({
       <main className="flex-1 flex items-center justify-center p-6 md:p-8">
         <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-5 bg-white rounded-3xl shadow-xl shadow-rose-soft/20 border border-border/50 overflow-hidden">
           {/* Summary */}
-          <div className="md:col-span-2 bg-gradient-to-br from-mauve to-accent-dark text-white p-10 flex flex-col justify-between relative overflow-hidden">
+          <div className="md:col-span-2 bg-linear-to-br from-mauve to-accent-dark text-white p-10 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/5 rounded-full"></div>
             <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full"></div>
             <div className="space-y-8 relative z-10">
