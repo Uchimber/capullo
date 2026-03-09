@@ -1,26 +1,60 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Pastel feminine palette - direct hex values */
+  --color-cream: #fdf6f0;
+  --color-foreground: #3d2c2e;
+  --color-accent: #d4a0a0;
+  --color-accent-dark: #b87878;
+  --color-accent-light: #f0dcd6;
+  --color-card: #ffffff;
+  --color-muted: #a08080;
+  --color-rose-soft: #f5d5d5;
+  --color-peach: #fce4d6;
+  --color-blush: #f8e8e0;
+  --color-lavender: #e8daf0;
+  --color-sage: #d5e5d5;
+  --color-mauve: #c48585;
+  --color-dusty: #b89090;
+  --color-border: #efe0d8;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #fdf6f0;
+  color: #3d2c2e;
+  font-family: var(--font-nunito), 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Soft glass card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 160, 160, 0.15);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e8d0c8;
+  border-radius: 20px;
+  border: 3px solid #fdf6f0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d4a0a0;
+}
+
+/* Soft selection */
+::selection {
+  background: #f5d5d5;
+  color: #3d2c2e;
 }

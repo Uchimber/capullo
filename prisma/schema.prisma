@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Service {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  duration    Int       // in minutes
+  price       Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
+}
+
+model Booking {
+  id              String      @id @default(cuid())
+  serviceId       String
+  service         Service     @relation(fields: [serviceId], references: [id])
+  customerName    String
+  customerPhone   String
+  startTime       DateTime
+  endTime         DateTime
+  status          String      @default("PENDING") // PENDING, PAID, CANCELLED
+  paymentId       String?
+  createdAt       DateTime    @default(now())
+
+  @@index([startTime])
+}
+
+model WorkingHours {
+  id        String   @id @default(cuid())
+  dayOfWeek Int      // 0-6 (Sunday-Saturday)
+  startTime String   // e.g., "09:00"
+  endTime   String   // e.g., "18:00"
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@unique([dayOfWeek])
+}
+
+model BusinessSettings {
+  id        String   @id @default("singleton")
+  phone     String   @default("98118008")
+  address   String   @default("СБД 1-р хороо, 5-р хороолол 14251, Чингисийн өргөн чөлөө. \"Бизнес плаза\" төв. 302 тоот өрөө.")
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,24 @@
+
+> capullo@0.1.0 build C:\Users\odgii\Desktop\capullo
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.4s
+  Running TypeScript ...
+Failed to compile.
+
+./proxy.ts:16:51
+Type error: Property 'role' does not exist on type '{}'.
+
+[0m [90m 14 |[39m
+ [90m 15 |[39m     [90m// Clerk-ээс хэрэглэгчийн эрхийг (metadata) шалгах[39m
+[31m[1m>[22m[39m[90m 16 |[39m     [36mconst[39m role [33m=[39m session[33m.[39msessionClaims[33m?[39m[33m.[39mmetadata[33m?[39m[33m.[39mrole[33m;[39m
+ [90m    |[39m                                                   [31m[1m^[22m[39m
+ [90m 17 |[39m
+ [90m 18 |[39m     [36mif[39m (role [33m!==[39m [32m"admin"[39m) {
+ [90m 19 |[39m       [90m// Хэрэв admin биш бол нүүр хуудас руу буцаана[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
