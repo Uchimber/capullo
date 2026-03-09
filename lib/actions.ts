@@ -260,7 +260,22 @@ export async function getAvailableSlots(date: Date, serviceId: string, isAdmin: 
   // If no working hours or not active, return empty
   if (!workingHours || !workingHours.isActive) return []
 
-  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000)
+  // CLEANUP: Delete very old PENDING bookings that never clicked "Pay" 
+  // to keep the database and admin dashboard clean.
+  const cleanupTime = new Date(Date.now() - 30 * 60 * 1000) // 30 mins
+  try {
+    await prisma.booking.deleteMany({
+      where: {
+        status: 'PENDING',
+        paymentId: null,
+        createdAt: { lt: cleanupTime }
+      }
+    })
+  } catch (e) {
+    console.error('Cleanup error:', e)
+  }
+
+  const activeWindow = new Date(Date.now() - 15 * 60 * 1000) // 15 minute window
 
   const bookings = await prisma.booking.findMany({
     where: {
@@ -271,9 +286,11 @@ export async function getAvailableSlots(date: Date, serviceId: string, isAdmin: 
       OR: [
         { status: 'PAID' },
         { status: 'CONFIRMED' },
+        { status: 'BLOCKED' },
         { 
           status: 'PENDING',
-          createdAt: { gte: fifteenMinutesAgo }
+          paymentId: { not: null }, // Only block if they actually clicked "Pay" (and thus generated an invoice)
+          createdAt: { gte: activeWindow }
         }
       ]
     }

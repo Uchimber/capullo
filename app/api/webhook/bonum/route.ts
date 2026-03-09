@@ -39,63 +39,69 @@ export async function POST(req: Request) {
     }
 
     // Capture various possible status and ID fields based on documentation
-    const rawStatus = (body.status || body.payment_status || body.body?.status || '').toString().toUpperCase();
-    const transactionId = body.transactionId || body.bookingId || body.orderId || body.body?.transactionId || body.id;
+    const topStatus = (body.status || '').toString().toUpperCase();
+    const bodyStatus = (body.body?.status || body.payment_status || '').toString().toUpperCase();
+    
+    // The actual "transactionId" is what we send as "transactionId" or "id"
+    const transactionId = body.transactionId || body.body?.transactionId || body.orderId || body.body?.orderId || body.id || body.body?.id;
     const invoiceId = body.invoiceId || body.body?.invoiceId || body.paymentId || body.id;
 
-    console.log(`Bonum Webhook processing: rawStatus=${rawStatus}, transactionId=${transactionId}, invoiceId=${invoiceId}`);
+    console.log(`Bonum Webhook Data: topStatus=${topStatus}, bodyStatus=${bodyStatus}, transactionId=${transactionId}`);
 
-    // Check if status indicates success
-    const isSuccess = ['PAID', 'SUCCESS', 'COMPLETED', '0'].includes(rawStatus);
+    // Check if status indicates success. Bonum often sends top-level SUCCESS and inner PAID.
+    const isSuccess = ['SUCCESS', 'PAID', 'COMPLETED', '0'].includes(topStatus) || 
+                      ['PAID', 'SUCCESS', '0'].includes(bodyStatus);
 
     if (isSuccess && transactionId) {
-      // Find the booking
-      console.log(`Searching for booking with ID: ${transactionId}`);
+      console.log(`Processing successful payment for transaction: ${transactionId}`);
+      
+      // Ensure we treat the ID as a string for the query
+      const idToSearch = String(transactionId);
+
       const booking = await prisma.booking.findUnique({
-        where: { id: transactionId }
+        where: { id: idToSearch }
       });
 
       if (!booking) {
-        console.error(`Bonum Webhook: Booking ${transactionId} not found in database.`);
-        // Try searching by paymentId as a fallback if the transactionId sent was actually the paymentId
+        console.error(`Bonum Webhook: Booking ${idToSearch} not found. Attempting paymentId fallback.`);
         const bookingByPaymentId = await prisma.booking.findFirst({
-          where: { paymentId: transactionId }
+          where: { paymentId: idToSearch }
         });
 
         if (bookingByPaymentId) {
-          console.log(`Found booking by paymentId fallback: ${bookingByPaymentId.id}`);
+          console.log(`Found booking by paymentId: ${bookingByPaymentId.id}`);
           await prisma.booking.update({
             where: { id: bookingByPaymentId.id },
             data: { status: 'PAID' }
           });
           revalidatePath('/admin/bookings');
-          return NextResponse.json({ success: true, message: 'Updated via paymentId fallback' });
+          return NextResponse.json({ success: true, from: 'paymentId_fallback' });
         }
-
-        return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+        
+        console.error(`Bonum Webhook: No booking found for ID ${idToSearch}`);
+        return NextResponse.json({ error: 'No booking found' }, { status: 404 });
       }
 
-      // If already paid, just return success
       if (booking.status === 'PAID') {
-        console.log(`Booking ${transactionId} is already marked as PAID.`);
+        console.log(`Booking ${idToSearch} is already PAID.`);
         return NextResponse.json({ success: true, message: 'Already paid' });
       }
 
       await prisma.booking.update({
-        where: { id: transactionId },
+        where: { id: idToSearch },
         data: { 
           status: 'PAID',
-          paymentId: invoiceId ? String(invoiceId) : undefined
+          paymentId: invoiceId ? String(invoiceId) : (booking.paymentId || String(transactionId))
         }
       });
       
-      console.log(`Bonum Webhook: Booking ${transactionId} successfully updated to PAID`);
+      console.log(`✅ Bonum Webhook: Booking ${idToSearch} marked as PAID`);
       
       revalidatePath('/admin/bookings');
       revalidatePath('/admin/scheduler');
       revalidatePath('/');
     } else {
-      console.warn(`Bonum Webhook: No action taken. isSuccess: ${isSuccess}, transactionId: ${transactionId}`);
+      console.warn(`⚠️ Bonum Webhook: Success conditions not met. isSuccess=${isSuccess}, transId=${transactionId}`);
     }
 
     console.log('--- Bonum Webhook End ---');
