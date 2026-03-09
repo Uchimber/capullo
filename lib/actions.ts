@@ -338,7 +338,7 @@ export async function getBusinessSettings() {
 
 // BONUM PAYMENT INTEGRATION
 const BONUM_TERMINAL_ID = "17172267"
-const BONUM_SECRET_KEY = "1fc53f9389f489ff6e04617bd6338a710e1e7c579cb572aec421f560f363119c0e0039e4b765e53c5339c1e6c7727985a488ab4ac8141140571256af36c3f410421b2ff278fb499b10e3bdb7d3236212"
+const BONUM_SECRET_KEY = "1fc53f9389f489ff6e04617bd6338a710e1e7c579cb572aec421f560f363119c0e0039e4b765e53c5339c1e6c77279854b20e998ed4599983a9c9dba12b36e89ce7ee7659043ebffcf77a095587bf694"
 const BONUM_BASE_URL = "https://apis.bonum.mn"
 
 import crypto from 'crypto'
@@ -378,10 +378,20 @@ export async function createBonumInvoice(bookingId: string) {
 
   // 2. Create Invoice
   const headersList = await headers()
-  const host = headersList.get('x-forwarded-host') || headersList.get('host')
-  const protocol = headersList.get('x-forwarded-proto') || 'http'
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`
+  const host = headersList.get('host') || 'capullo-production.up.railway.app'
+  const protocol = headersList.get('x-forwarded-proto') || 'https'
   
+  // Use strictly production URL if not explicitly on localhost
+  let baseUrl =  `https://capullo-production.up.railway.app`
+  if (host.includes('localhost') || host.includes('127.0.0.1')) {
+    baseUrl = `http://${host}`
+  }
+  
+  // Override if ENV is set
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+  }
+
   const body = {
     amount: booking.service.price,
     callback: `${baseUrl}/api/webhook/bonum?bookingId=${booking.id}`,
