@@ -81,8 +81,7 @@ export default function AdminSchedulerClient({
   const currentDayBookings = allBookings.filter((b) =>
     isSameDay(new Date(b.startTime), selectedDate),
   );
-
-  // Auto-refresh bookings every 15 seconds
+  // Auto-refresh bookings every 60 seconds silently to avoid flicker
   useEffect(() => {
     async function refreshBookings() {
       try {
@@ -92,23 +91,27 @@ export default function AdminSchedulerClient({
         console.error('Failed to refresh bookings:', err);
       }
     }
-    const interval = setInterval(refreshBookings, 15000);
+    const interval = setInterval(refreshBookings, 60000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
+    let active = true;
     async function fetchSlots() {
       if (!formData.serviceId) return;
-      setLoading(true);
+      // Removed setLoading(true) here so background refresh doesn't cause visual flicker
       const slots = await getAvailableSlots(
         selectedDate,
         formData.serviceId,
         true,
       );
-      setAvailableSlots(slots);
-      setLoading(false);
+      if (active) {
+        setAvailableSlots(slots);
+        setLoading(false);
+      }
     }
     fetchSlots();
+    return () => { active = false; };
   }, [selectedDate, formData.serviceId, allBookings]);
 
   const handleManualBooking = async (e: React.FormEvent) => {
@@ -137,10 +140,28 @@ export default function AdminSchedulerClient({
 
   const handleBlockSlot = async (slot: Date) => {
     if (!formData.serviceId) return;
-    await blockSlot({
-      serviceId: formData.serviceId,
-      startTime: slot,
-    });
+
+    const durationStr = window.prompt("Блок хийх хугацааг минутаар оруулна уу:", "60");
+    if (durationStr === null) return; // User cancelled
+
+    const duration = parseInt(durationStr, 10);
+    if (isNaN(duration) || duration <= 0) {
+      alert("Зөв хугацаа оруулна уу.");
+      return;
+    }
+
+    try {
+      await blockSlot({
+        serviceId: formData.serviceId,
+        startTime: slot,
+        duration: duration,
+      });
+      // Optimistic silent refresh after block
+      const fresh = await getAdminBookings();
+      setAllBookings(fresh);
+    } catch (e: any) {
+      alert(e.message || "Алдаа гарлаа");
+    }
   };
 
   const goToToday = () => {

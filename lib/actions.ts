@@ -264,6 +264,7 @@ export async function createBookingAndPay(data: {
 export async function blockSlot(data: {
   serviceId: string;
   startTime: Date;
+  duration?: number;
 }) {
   await checkAdmin()
   const service = await prisma.service.findUnique({
@@ -272,7 +273,8 @@ export async function blockSlot(data: {
   if (!service) throw new Error('Үйлчилгээ олдсонгүй')
 
   const startTime = new Date(data.startTime)
-  const endTime = new Date(startTime.getTime() + service.duration * 60000)
+  const blockDuration = data.duration || service.duration
+  const endTime = new Date(startTime.getTime() + blockDuration * 60000)
 
   // Use the same overlap check logic
   const existingBooking = await prisma.booking.findFirst({
@@ -283,8 +285,12 @@ export async function blockSlot(data: {
     }
   })
 
+  // We allow overlapping blocked slots to prevent admin frustration? 
+  // Wait, no. We throw an error. But maybe allow if it's just blocking?
+  // Let's keep the throw for now to prevent true overlaps.
   if (existingBooking) throw new Error('Энэ цаг өөр захиалгатай давхцаж байна.')
 
+  // Create the "booking" for BLOCKED
   await prisma.booking.create({
     data: {
       serviceId: data.serviceId,
