@@ -251,11 +251,13 @@ export async function getAvailableSlots(date: Date, serviceId: string, isAdmin: 
   })
   if (!service) return []
 
+  // Ensure we are looking at the correct day of week in local time
   const dayOfWeek = date.getDay()
   const workingHours = await prisma.workingHours.findUnique({
     where: { dayOfWeek }
   })
 
+  // If no working hours or not active, return empty
   if (!workingHours || !workingHours.isActive) return []
 
   const bookings = await prisma.booking.findMany({
@@ -272,8 +274,12 @@ export async function getAvailableSlots(date: Date, serviceId: string, isAdmin: 
   const [startHour, startMin] = workingHours.startTime.split(':').map(Number)
   const [endHour, endMin] = workingHours.endTime.split(':').map(Number)
 
-  let currentSlot = setMinutes(setHours(startOfDay(date), startHour), startMin)
-  const endLimit = setMinutes(setHours(startOfDay(date), endHour), endMin)
+  // Use the date object passed from client but set explicit hours in local time
+  let currentSlot = new Date(date)
+  currentSlot.setHours(startHour, startMin, 0, 0)
+  
+  const endLimit = new Date(date)
+  endLimit.setHours(endHour, endMin, 0, 0)
 
   const now = new Date()
   const bufferTime = isAdmin ? now : addMinutes(now, 120) // 2 hour buffer for public
