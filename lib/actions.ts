@@ -396,18 +396,31 @@ export async function createBonumInvoice(bookingId: string) {
     // 2. Create Invoice
     const headersList = await headers()
     const host = headersList.get('host') || 'capullo-production.up.railway.app'
+    const forwardedHost = headersList.get('x-forwarded-host')
+    const protocol = headersList.get('x-forwarded-proto') || 'https'
+    
+    const actualHost = forwardedHost || host
     
     // Determine baseUrl
     let baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    if (!baseUrl) {
-      baseUrl = (host.includes('localhost') || host.includes('127.0.0.1')) 
-        ? `http://${host}` 
-        : `https://${host}`;
+    
+    if (!baseUrl || baseUrl === "") {
+      // If no ENV, detect from headers but be careful with localhost in production
+      if (actualHost.includes('localhost') || actualHost.includes('127.0.0.1') || actualHost.includes('8080')) {
+        // If we detect 8080 or localhost but it's likely production, fallback to production URL
+        if (forwardedHost && !forwardedHost.includes('localhost')) {
+          baseUrl = `https://${forwardedHost}`
+        } else {
+          baseUrl = (actualHost.includes('localhost')) ? `http://${actualHost}` : `https://capullo-production.up.railway.app`
+        }
+      } else {
+        baseUrl = `${protocol}://${actualHost}`
+      }
     }
     
-    // Final check to ensure we don't use localhost in production if possible
-    if (!baseUrl.includes('localhost') && !baseUrl.includes('https')) {
-      baseUrl = baseUrl.replace('http://', 'https://');
+    // Final safety: if we are still seeing localhost but we have a production-like host or it's not localhost
+    if (baseUrl.includes('localhost') && !actualHost.includes('localhost')) {
+      baseUrl = `https://capullo-production.up.railway.app`
     }
 
     console.log(`Using Base URL for callbacks: ${baseUrl}`);

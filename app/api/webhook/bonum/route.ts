@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 const BONUM_SECRET_KEY = "1fc53f9389f489ff6e04617bd6338a710e1e7c579cb572aec421f560f363119c0e0039e4b765e53c5339c1e6c7727985a488ab4ac8141140571256af36c3f410421b2ff278fb499b10e3bdb7d3236212";
 
@@ -100,7 +100,20 @@ export async function GET(req: Request) {
     if (!searchParams.get('bookingId') && pendingIdFromCookie === transactionId) {
       c.delete('pendingBookingId');
     }
-    return NextResponse.redirect(new URL(`/book/success/${transactionId}`, req.url));
+    const headersList = await headers();
+    const host = headersList.get('x-forwarded-host') || headersList.get('host') || 'capullo-production.up.railway.app';
+    const protocol = headersList.get('x-forwarded-proto') || 'https';
+    const baseUrl = `${protocol}://${host}`;
+
+    const redirectUrl = new URL(`/book/success/${transactionId}`, baseUrl);
+    
+    // Safety check for localhost in production
+    if (redirectUrl.hostname.includes('localhost') && !host.includes('localhost')) {
+      redirectUrl.host = 'capullo-production.up.railway.app';
+      redirectUrl.protocol = 'https:';
+    }
+
+    return NextResponse.redirect(redirectUrl);
   }
 
   return NextResponse.json({ 
