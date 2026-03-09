@@ -52,7 +52,13 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const transactionId = searchParams.get('transactionId') || searchParams.get('id') || searchParams.get('order_id');
+  const transactionId = 
+    searchParams.get('bookingId') || 
+    searchParams.get('transactionId') || 
+    searchParams.get('id') || 
+    searchParams.get('order_id') ||
+    searchParams.get('orderId') ||
+    searchParams.get('invoiceId');
   
   if (transactionId) {
     return NextResponse.redirect(new URL(`/book/success/${transactionId}`, req.url));

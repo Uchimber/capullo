@@ -379,8 +379,10 @@ export async function createBonumInvoice(bookingId: string) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   const body = {
     amount: booking.service.price,
-    callback: `${baseUrl}/api/webhook/bonum`,
+    callback: `${baseUrl}/api/webhook/bonum?bookingId=${booking.id}`,
     redirectUri: `${baseUrl}/book/success/${booking.id}`,
+    redirectUrl: `${baseUrl}/book/success/${booking.id}`,
+    returnUrl: `${baseUrl}/book/success/${booking.id}`,
     transactionId: booking.id,
     expiresIn: 3600,
     items: [
