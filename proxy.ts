@@ -13,7 +13,8 @@ export default clerkMiddleware(async (auth, req) => {
     }
 
     // Clerk-ээс хэрэглэгчийн эрхийг (metadata) шалгах
-    const role = (session.sessionClaims?.metadata as any)?.role;
+    const metadata = session.sessionClaims?.metadata as { role?: string } | undefined;
+    const role = metadata?.role;
 
     if (role !== "admin") {
       // Хэрэв admin биш бол нүүр хуудас руу буцаана

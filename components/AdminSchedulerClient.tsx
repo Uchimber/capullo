@@ -23,14 +23,12 @@ import {
   Clock,
   User,
   Phone,
-  Save,
   X,
   RefreshCw,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  ShieldCheck,
 } from "lucide-react";
 
 interface Service {
@@ -235,7 +233,7 @@ export default function AdminSchedulerClient({
                   {currentDayBookings.map((booking) => (
                     <div
                       key={booking.id}
-                      className={`group relative bg-white rounded-[2rem] border p-7 hover:shadow-xl hover:-translate-y-0.5 transition-all border-l-8 ${
+                      className={`group relative bg-white rounded-4xl border p-7 hover:shadow-xl hover:-translate-y-0.5 transition-all border-l-8 ${
                         booking.status === 'BLOCKED' ? 'border-foreground border-l-foreground' : 'border-rose-soft/40 border-l-mauve'
                       }`}
                     >
@@ -328,7 +326,7 @@ export default function AdminSchedulerClient({
         <div className="space-y-8">
           {/* Quick Stats (Top) */}
           <div className="grid grid-cols-2 gap-4 relative z-0">
-            <div className="p-6 bg-white rounded-[2rem] border border-rose-soft/40 shadow-lg shadow-rose-soft/5 group overflow-hidden relative">
+            <div className="p-6 bg-white rounded-4xl border border-rose-soft/40 shadow-lg shadow-rose-soft/5 group overflow-hidden relative">
               <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform duration-500">
                 <Clock className="w-16 h-16 text-mauve" />
               </div>
@@ -336,7 +334,7 @@ export default function AdminSchedulerClient({
               <p className="text-3xl font-extrabold text-mauve tracking-tight leading-none">{availableSlots.length}</p>
             </div>
             
-            <div className="p-6 bg-foreground rounded-[2rem] border border-foreground shadow-lg shadow-foreground/10 group overflow-hidden relative">
+            <div className="p-6 bg-foreground rounded-4xl border border-foreground shadow-lg shadow-foreground/10 group overflow-hidden relative">
               <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
                 <CalendarIcon className="w-16 h-16 text-white" />
               </div>

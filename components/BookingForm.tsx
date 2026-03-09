@@ -43,8 +43,10 @@ export default function BookingForm({ serviceId, handleBookingAction }: Props) {
     try {
       const formData = new FormData(e.currentTarget);
       await handleBookingAction(formData);
-    } catch (err: any) {
-      setError(err.message || "Захиалга хийхэд алдаа гарлаа. Дахин оролдоно уу.");
+    } catch (err) {
+      const error = err as Error;
+      console.error(error);
+      setError(error.message || 'Төлбөрийн системтэй холбогдоход алдаа гарлаа.');
       setIsSubmitting(false);
     }
   };

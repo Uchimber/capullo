@@ -6,7 +6,13 @@ import { CreditCard, ShieldCheck, Loader2, ExternalLink, Sparkles } from "lucide
 import Link from "next/link";
 
 interface Props {
-  booking: any;
+  booking: {
+    id: string;
+    service: {
+      name: string;
+      price: number;
+    };
+  };
 }
 
 export default function PaymentClient({ booking }: Props) {
@@ -23,9 +29,10 @@ export default function PaymentClient({ booking }: Props) {
       } else {
         throw new Error('Төлбөрийн холбоос үүсгэж чадсангүй.');
       }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Төлбөрийн системтэй холбогдоход алдаа гарлаа.');
+    } catch (err) {
+      const error = err as Error;
+      console.error(error);
+      setError(error.message || 'Төлбөрийн системтэй холбогдоход алдаа гарлаа.');
       setLoading(false);
     }
   };

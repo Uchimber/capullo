@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { mn } from "date-fns/locale";
-import { CheckCircle2, Calendar, Receipt, ArrowRight, Sparkles } from "lucide-react";
+import { CheckCircle2, Calendar, Receipt, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default async function SuccessPage({
@@ -23,7 +23,7 @@ export default async function SuccessPage({
       <div className="max-w-2xl w-full grid grid-cols-1 md:grid-cols-5 bg-white rounded-3xl shadow-xl shadow-sage/20 border border-border/50 overflow-hidden relative">
 
         {/* Success Side */}
-        <div className="md:col-span-2 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-10 flex flex-col justify-between relative overflow-hidden">
+        <div className="md:col-span-2 bg-linear-to-br from-emerald-500 to-emerald-600 text-white p-10 flex flex-col justify-between relative overflow-hidden">
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/5 rounded-full"></div>
           <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full"></div>
           <div className="space-y-8 relative z-10">

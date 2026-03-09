@@ -15,7 +15,8 @@ import { auth } from '@clerk/nextjs/server'
 
 async function checkAdmin() {
   const session = await auth()
-  const role = (session.sessionClaims as any)?.metadata?.role
+  const metadata = session.sessionClaims?.metadata as { role?: string } | undefined
+  const role = metadata?.role
   if (role !== "admin") {
     throw new Error('Энэ үйлдлийг хийхэд админ эрх шаардлагатай.')
   }
@@ -283,7 +284,7 @@ export async function getAvailableSlots(date: Date, serviceId: string, isAdmin: 
     // Check if slot is in the past or within buffer (if not admin)
     const isPastOrBuffered = isBefore(currentSlot, bufferTime)
 
-    const isOccupied = bookings.some((booking: any) => {
+    const isOccupied = bookings.some((booking) => {
       const bStart = new Date(booking.startTime)
       const bEnd = new Date(booking.endTime)
       // Overlap check
@@ -338,7 +339,7 @@ const BONUM_BASE_URL = "https://apis.bonum.mn"
 
 import crypto from 'crypto'
 
-function generateChecksum(body: any): string {
+function generateChecksum(body: Record<string, unknown>): string {
   const rawBody = JSON.stringify(body)
   return crypto
     .createHmac('sha256', BONUM_SECRET_KEY)

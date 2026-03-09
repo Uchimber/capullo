@@ -1,6 +1,6 @@
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { Sparkles, Calendar, Settings, List, LayoutDashboard, Home } from "lucide-react";
+import { Sparkles, Calendar, Settings, List, Home } from "lucide-react";
 
 export default function AdminLayout({
   children,

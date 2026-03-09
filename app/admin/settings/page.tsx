@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { updateAllWorkingHours, updateBusinessSettings } from "@/lib/actions";
-import { Clock, Check, X, Save, Phone, MapPin, Sparkles, Building } from "lucide-react";
+import { Clock, Check, X, Save, Phone, MapPin } from "lucide-react";
 
 export default async function AdminSettingsPage() {
   const days = [
