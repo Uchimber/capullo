@@ -36,41 +36,63 @@ export async function POST(req: Request) {
     }
 
     // Capture various possible status and ID fields based on documentation
-    const topLevelStatus = (body.status || '').toString().toUpperCase();
-    const innerBody = body.body || {};
-    const status = (innerBody.status || body.payment_status || '').toString().toUpperCase();
-    const transactionId = innerBody.transactionId || body.transactionId || body.orderId || body.id || body.bookingId;
-    const invoiceId = innerBody.invoiceId || body.invoiceId || body.id;
+    const rawStatus = (body.status || body.payment_status || body.body?.status || '').toString().toUpperCase();
+    const transactionId = body.transactionId || body.bookingId || body.orderId || body.body?.transactionId || body.id;
+    const invoiceId = body.invoiceId || body.body?.invoiceId || body.paymentId || body.id;
 
-    console.log(`Bonum Webhook processing: topStatus=${topLevelStatus}, status=${status}, transactionId=${transactionId}`);
+    console.log(`Bonum Webhook processing: rawStatus=${rawStatus}, transactionId=${transactionId}, invoiceId=${invoiceId}`);
 
-    // Check if status is PAID or topLevel is SUCCESS (depending on how Bonum triggers this)
-    if ((status === 'PAID' || topLevelStatus === 'SUCCESS') && transactionId) {
-      // Find the booking first to make sure it exists
+    // Check if status indicates success
+    const isSuccess = ['PAID', 'SUCCESS', 'COMPLETED', '0'].includes(rawStatus);
+
+    if (isSuccess && transactionId) {
+      // Find the booking
+      console.log(`Searching for booking with ID: ${transactionId}`);
       const booking = await prisma.booking.findUnique({
         where: { id: transactionId }
       });
 
       if (!booking) {
-        console.error(`Bonum Webhook: Booking ${transactionId} not found`);
+        console.error(`Bonum Webhook: Booking ${transactionId} not found in database.`);
+        // Try searching by paymentId as a fallback if the transactionId sent was actually the paymentId
+        const bookingByPaymentId = await prisma.booking.findFirst({
+          where: { paymentId: transactionId }
+        });
+
+        if (bookingByPaymentId) {
+          console.log(`Found booking by paymentId fallback: ${bookingByPaymentId.id}`);
+          await prisma.booking.update({
+            where: { id: bookingByPaymentId.id },
+            data: { status: 'PAID' }
+          });
+          revalidatePath('/admin/bookings');
+          return NextResponse.json({ success: true, message: 'Updated via paymentId fallback' });
+        }
+
         return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      }
+
+      // If already paid, just return success
+      if (booking.status === 'PAID') {
+        console.log(`Booking ${transactionId} is already marked as PAID.`);
+        return NextResponse.json({ success: true, message: 'Already paid' });
       }
 
       await prisma.booking.update({
         where: { id: transactionId },
         data: { 
           status: 'PAID',
-          paymentId: invoiceId?.toString() 
+          paymentId: invoiceId ? String(invoiceId) : undefined
         }
       });
       
-      console.log(`Bonum Webhook: Booking ${transactionId} updated to PAID`);
+      console.log(`Bonum Webhook: Booking ${transactionId} successfully updated to PAID`);
       
       revalidatePath('/admin/bookings');
       revalidatePath('/admin/scheduler');
       revalidatePath('/');
     } else {
-      console.warn(`Bonum Webhook: No action taken. Status: ${status}, TransactionID: ${transactionId}`);
+      console.warn(`Bonum Webhook: No action taken. isSuccess: ${isSuccess}, transactionId: ${transactionId}`);
     }
 
     console.log('--- Bonum Webhook End ---');

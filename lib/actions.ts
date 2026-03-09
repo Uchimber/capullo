@@ -260,13 +260,22 @@ export async function getAvailableSlots(date: Date, serviceId: string, isAdmin: 
   // If no working hours or not active, return empty
   if (!workingHours || !workingHours.isActive) return []
 
+  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000)
+
   const bookings = await prisma.booking.findMany({
     where: {
       startTime: {
         gte: startOfDay(date),
         lte: endOfDay(date)
       },
-      status: { not: 'CANCELLED' }
+      OR: [
+        { status: 'PAID' },
+        { status: 'CONFIRMED' },
+        { 
+          status: 'PENDING',
+          createdAt: { gte: fifteenMinutesAgo }
+        }
+      ]
     }
   })
 
