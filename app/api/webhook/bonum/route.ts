@@ -50,7 +50,17 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
-  return NextResponse.json({ message: "Bonum Webhook is active. Use POST for actual payment data." });
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const transactionId = searchParams.get('transactionId') || searchParams.get('id') || searchParams.get('order_id');
+  
+  if (transactionId) {
+    return NextResponse.redirect(new URL(`/book/success/${transactionId}`, req.url));
+  }
+
+  return NextResponse.json({ 
+    message: "Bonum Webhook is active. Use POST for actual payment data.",
+    receivedParams: Object.fromEntries(searchParams.entries())
+  });
 }
 
