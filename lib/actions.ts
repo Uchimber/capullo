@@ -12,6 +12,7 @@ import {
 } from 'date-fns'
 
 import { auth } from '@clerk/nextjs/server'
+import { cookies } from 'next/headers'
 
 async function checkAdmin() {
   const session = await auth()
@@ -420,6 +421,15 @@ export async function createBonumInvoice(bookingId: string) {
   await prisma.booking.update({
     where: { id: bookingId },
     data: { paymentId: invoiceId }
+  })
+
+  // Store booking ID in cookie for redirect fallback
+  const c = await cookies()
+  c.set('pendingBookingId', bookingId, { 
+    maxAge: 3600, // 1 hour
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   })
 
   return followUpLink
