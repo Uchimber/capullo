@@ -38,6 +38,9 @@ export async function POST(req: Request) {
       
       revalidatePath('/admin/bookings');
       revalidatePath('/admin/scheduler');
+      revalidatePath('/');
+    } else {
+      console.warn(`Bonum Webhook: Unhandled status ${status}`);
     }
 
     return NextResponse.json({ success: true });
@@ -46,3 +49,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function GET() {
+  return NextResponse.json({ message: "Bonum Webhook is active. Use POST for actual payment data." });
+}
+
