@@ -356,99 +356,137 @@ function generateChecksum(body: Record<string, unknown>): string {
 }
 
 export async function createBonumInvoice(bookingId: string) {
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    include: { service: true }
-  })
+  console.log(`Starting Bonum invoice creation for booking: ${bookingId}`);
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { service: true }
+    })
 
-  if (!booking) throw new Error('Захиалга олдсонгүй')
-
-  // 1. Get Access Token
-  const authRes = await fetch(`${BONUM_BASE_URL}/bonum-gateway/ecommerce/auth/create`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `AppSecret ${BONUM_SECRET_KEY}`,
-      'X-TERMINAL-ID': BONUM_TERMINAL_ID
+    if (!booking) {
+      console.error(`Booking not found: ${bookingId}`);
+      return { success: false, error: 'Захиалга олдсонгүй' };
     }
-  })
 
-  if (!authRes.ok) {
-    const errorText = await authRes.text()
-    console.error('Bonum Auth Error:', errorText)
-    throw new Error('Төлбөрийн системтэй холбогдоход алдаа гарлаа (Auth)')
+    // 1. Get Access Token
+    console.log("Fetching Bonum access token...");
+    const authRes = await fetch(`${BONUM_BASE_URL}/bonum-gateway/ecommerce/auth/create`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `AppSecret ${BONUM_SECRET_KEY}`,
+        'X-TERMINAL-ID': BONUM_TERMINAL_ID
+      },
+      cache: 'no-store'
+    })
+
+    if (!authRes.ok) {
+      const errorText = await authRes.text()
+      console.error('Bonum Auth error response:', errorText)
+      return { success: false, error: `Төлбөрийн системд нэвтэрч чадсангүй (${authRes.status})` };
+    }
+
+    const authData = await authRes.json()
+    const accessToken = authData.accessToken || authData.body?.accessToken;
+
+    if (!accessToken) {
+      console.error('Bonum Auth failed: No accessToken in response', authData);
+      return { success: false, error: 'Төлбөрийн системээс зөвшөөрөл авч чадсангүй.' };
+    }
+
+    // 2. Create Invoice
+    const headersList = await headers()
+    const host = headersList.get('host') || 'capullo-production.up.railway.app'
+    
+    // Determine baseUrl
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseUrl) {
+      baseUrl = (host.includes('localhost') || host.includes('127.0.0.1')) 
+        ? `http://${host}` 
+        : `https://${host}`;
+    }
+    
+    // Final check to ensure we don't use localhost in production if possible
+    if (!baseUrl.includes('localhost') && !baseUrl.includes('https')) {
+      baseUrl = baseUrl.replace('http://', 'https://');
+    }
+
+    console.log(`Using Base URL for callbacks: ${baseUrl}`);
+
+    const body = {
+      amount: booking.service.price,
+      callback: `${baseUrl}/api/webhook/bonum?bookingId=${booking.id}`,
+      redirectUri: `${baseUrl}/book/success/${booking.id}`,
+      redirectUrl: `${baseUrl}/book/success/${booking.id}`,
+      returnUrl: `${baseUrl}/book/success/${booking.id}`,
+      transactionId: booking.id,
+      expiresIn: 3600,
+      items: [
+        {
+          title: booking.service.name,
+          remark: `${booking.customerName} - ${booking.customerPhone}`,
+          image: "https://capullo.mn/logo.png",
+          amount: booking.service.price,
+          count: 1
+        }
+      ]
+    }
+
+    const checksum = generateChecksum(body)
+
+    console.log("Creating Bonum invoice...");
+    const invoiceRes = await fetch(`${BONUM_BASE_URL}/bonum-gateway/ecommerce/invoices`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'x-checksum-v2': checksum
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store'
+    })
+
+    if (!invoiceRes.ok) {
+      const errorText = await invoiceRes.text()
+      console.error('Bonum Invoice creation error response:', errorText)
+      return { success: false, error: `Нэхэмжлэх үүсгэж чадсангүй (${invoiceRes.status})` };
+    }
+
+    const invoiceData = await invoiceRes.json()
+    // Handle both direct and nested response structure
+    const followUpLink = invoiceData.followUpLink || invoiceData.body?.followUpLink;
+    const invoiceId = invoiceData.invoiceId || invoiceData.body?.invoiceId || invoiceData.id;
+
+    if (!followUpLink) {
+      console.error('Bonum response missing followUpLink:', invoiceData);
+      return { success: false, error: 'Төлбөрийн холбоос хүлээн авч чадсангүй.' };
+    }
+
+    // Update booking with invoice ID for tracking
+    console.log(`Updating booking ${bookingId} with invoiceId: ${invoiceId}`);
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { paymentId: String(invoiceId) }
+    })
+
+    // Store booking ID in cookie for redirect fallback
+    try {
+      const c = await cookies()
+      c.set('pendingBookingId', bookingId, { 
+        maxAge: 3600, // 1 hour
+        httpOnly: true,
+        secure: true, // Always secure in production/Railway
+        sameSite: 'lax'
+      })
+    } catch (cookieErr) {
+      console.warn("Failed to set pendingBookingId cookie:", cookieErr);
+    }
+
+    console.log("Invoice created successfully, returning link.");
+    return { success: true, followUpLink };
+  } catch (err) {
+    const error = err as Error;
+    console.error('Unexpected error in createBonumInvoice:', error);
+    return { success: false, error: `Системд алдаа гарлаа: ${error.message}` };
   }
-
-  const { accessToken } = await authRes.json()
-
-  // 2. Create Invoice
-  const headersList = await headers()
-  const host = headersList.get('host') || 'capullo-production.up.railway.app'
-  const protocol = headersList.get('x-forwarded-proto') || 'https'
-  
-  // Use strictly production URL if not explicitly on localhost
-  let baseUrl =  `https://capullo-production.up.railway.app`
-  if (host.includes('localhost') || host.includes('127.0.0.1')) {
-    baseUrl = `http://${host}`
-  }
-  
-  // Override if ENV is set
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-  }
-
-  const body = {
-    amount: booking.service.price,
-    callback: `${baseUrl}/api/webhook/bonum?bookingId=${booking.id}`,
-    redirectUri: `${baseUrl}/book/success/${booking.id}`,
-    redirectUrl: `${baseUrl}/book/success/${booking.id}`,
-    returnUrl: `${baseUrl}/book/success/${booking.id}`,
-    transactionId: booking.id,
-    expiresIn: 3600,
-    items: [
-      {
-        title: booking.service.name,
-        remark: `${booking.customerName} - ${booking.customerPhone}`,
-        image: "https://capullo.mn/logo.png", // Optional but helps UX
-        amount: booking.service.price,
-        count: 1
-      }
-    ]
-  }
-
-  const checksum = generateChecksum(body)
-
-  const invoiceRes = await fetch(`${BONUM_BASE_URL}/bonum-gateway/ecommerce/invoices`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'x-checksum-v2': checksum
-    },
-    body: JSON.stringify(body)
-  })
-
-  if (!invoiceRes.ok) {
-    const errorText = await invoiceRes.text()
-    console.error('Bonum Invoice Error:', errorText)
-    throw new Error('Нэхэмжлэх үүсгэхэд алдаа гарлаа')
-  }
-
-  const { followUpLink, invoiceId } = await invoiceRes.json()
-
-  // Update booking with invoice ID for tracking
-  await prisma.booking.update({
-    where: { id: bookingId },
-    data: { paymentId: invoiceId }
-  })
-
-  // Store booking ID in cookie for redirect fallback
-  const c = await cookies()
-  c.set('pendingBookingId', bookingId, { 
-    maxAge: 3600, // 1 hour
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
-  })
-
-  return followUpLink
 }
+

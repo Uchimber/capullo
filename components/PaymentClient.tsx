@@ -23,16 +23,17 @@ export default function PaymentClient({ booking }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const followUpLink = await createBonumInvoice(booking.id);
-      if (followUpLink) {
-        window.location.href = followUpLink;
+      const result = await createBonumInvoice(booking.id);
+      
+      if (result.success && result.followUpLink) {
+        window.location.href = result.followUpLink;
       } else {
-        throw new Error('Төлбөрийн холбоос үүсгэж чадсангүй.');
+        setError(result.error || 'Төлбөрийн холбоос үүсгэж чадсангүй.');
+        setLoading(false);
       }
     } catch (err) {
-      const error = err as Error;
-      console.error(error);
-      setError(error.message || 'Төлбөрийн системтэй холбогдоход алдаа гарлаа.');
+      console.error(err);
+      setError('Төлбөрийн системтэй холбогдоход алдаа гарлаа. Та түр хүлээгээд дахин оролдоно уу.');
       setLoading(false);
     }
   };
