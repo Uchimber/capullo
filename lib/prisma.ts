@@ -7,9 +7,13 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 // we use a separate key to avoid Prisma auto-detecting helpfully-but-wrongly
 const connectionString = (process.env.POSTGRES_URL || process.env.DATABASE_URL) as string
 
+if (!connectionString) {
+  console.error('DATABASE_URL or POSTGRES_URL is missing! Please check your environment variables.')
+}
+
 const pool = new pg.Pool({ 
   connectionString,
-  ssl: {
+  ssl: connectionString?.includes('localhost') ? false : {
     rejectUnauthorized: false
   }
 })
