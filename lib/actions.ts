@@ -40,6 +40,7 @@ export async function createService(formData: FormData) {
   })
 
   revalidatePath('/admin/services')
+  revalidatePath('/')
 }
 
 export async function updateService(id: string, formData: FormData) {
@@ -60,6 +61,7 @@ export async function updateService(id: string, formData: FormData) {
   })
 
   revalidatePath('/admin/services')
+  revalidatePath('/')
 }
 
 export async function deleteService(id: string) {
@@ -68,6 +70,7 @@ export async function deleteService(id: string) {
     where: { id }
   })
   revalidatePath('/admin/services')
+  revalidatePath('/')
 }
 
 // BOOKINGS
