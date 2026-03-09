@@ -57,12 +57,10 @@ export default function AdminBookingsClient() {
     }
   }, [page, activeStatus, search])
 
-  // Initial load + auto-refresh every 15 seconds
+  // Initial load only, removed interval polling
   useEffect(() => {
     setLoading(true)
     fetchBookings()
-    const interval = setInterval(fetchBookings, 15000)
-    return () => clearInterval(interval)
   }, [fetchBookings])
 
   // Reset page when filter/search changes
@@ -152,16 +150,25 @@ export default function AdminBookingsClient() {
       </div>
 
       {/* Stats Bar */}
-      <div className="flex items-center gap-4 text-xs font-bold text-dusty">
-        <span className="flex items-center gap-2">
-          <Filter className="w-3.5 h-3.5 text-mauve" />
-          Нийт: <span className="text-foreground">{total}</span> захиалга
-        </span>
-        {loading && (
-          <span className="flex items-center gap-1 text-mauve">
-            <RefreshCw className="w-3 h-3 animate-spin" /> Шинэчилж байна...
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 text-xs font-bold text-dusty">
+          <span className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-mauve" />
+            Нийт: <span className="text-foreground">{total}</span> захиалга
           </span>
-        )}
+        </div>
+        
+        <button 
+          onClick={() => {
+            setLoading(true);
+            fetchBookings();
+          }}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-soft/40 rounded-xl text-xs font-bold text-dusty hover:text-mauve hover:border-mauve transition-all disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-mauve' : ''}`} />
+          {loading ? 'Шинэчилж байна...' : 'Шинэчлэх'}
+        </button>
       </div>
 
       {/* Table */}

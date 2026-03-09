@@ -81,19 +81,18 @@ export default function AdminSchedulerClient({
   const currentDayBookings = allBookings.filter((b) =>
     isSameDay(new Date(b.startTime), selectedDate),
   );
-  // Auto-refresh bookings every 60 seconds silently to avoid flicker
-  useEffect(() => {
-    async function refreshBookings() {
-      try {
-        const fresh = await getAdminBookings();
-        setAllBookings(fresh);
-      } catch (err) {
-        console.error('Failed to refresh bookings:', err);
-      }
+  // Auto-refresh removed, keeping function for manual use
+  const refreshBookings = async () => {
+    try {
+      setLoading(true);
+      const fresh = await getAdminBookings();
+      setAllBookings(fresh);
+    } catch (err) {
+      console.error('Failed to refresh bookings:', err);
+    } finally {
+      setLoading(false);
     }
-    const interval = setInterval(refreshBookings, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  };
 
   useEffect(() => {
     let active = true;
@@ -107,7 +106,7 @@ export default function AdminSchedulerClient({
       );
       if (active) {
         setAvailableSlots(slots);
-        setLoading(false);
+        // Note: loading state is now managed mostly by refresh button
       }
     }
     fetchSlots();
@@ -156,9 +155,7 @@ export default function AdminSchedulerClient({
         startTime: slot,
         duration: duration,
       });
-      // Optimistic silent refresh after block
-      const fresh = await getAdminBookings();
-      setAllBookings(fresh);
+      refreshBookings();
     } catch (e: any) {
       alert(e.message || "Алдаа гарлаа");
     }
@@ -206,6 +203,16 @@ export default function AdminSchedulerClient({
                 className="p-2 hover:bg-blush/30 rounded-xl transition-colors text-dusty hover:text-mauve outline-none"
               >
                 <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="border-l border-rose-soft/40 pl-2">
+              <button
+                onClick={refreshBookings}
+                disabled={loading}
+                title="Мэдээллийг шинэчлэх"
+                className="p-2 mr-1 bg-mauve/10 hover:bg-mauve/20 rounded-xl transition-colors text-mauve hover:text-accent-dark outline-none disabled:opacity-50"
+              >
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
