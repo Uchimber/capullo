@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from "react";
-import { Plus, Trash2, Edit2, X, Save, Clock, Tag, Sparkles } from "lucide-react";
-import { createService, updateService, deleteService } from "@/lib/actions";
+import { Plus, Trash2, Edit2, X, Save, Clock, Tag, Sparkles, RefreshCw } from "lucide-react";
+import { createService, updateService, deleteService, getServices } from "@/lib/actions";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Service {
   id: string;
@@ -17,14 +18,46 @@ interface Props {
 }
 
 export default function AdminServicesClient({ initialServices }: Props) {
+  const queryClient = useQueryClient();
   const [editingService, setEditingService] = useState<Service | null>(null);
+
+  const { data: services = initialServices, isLoading, isFetching, refetch } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      // We need a getServices action. Let's assume it exists or I'll add it.
+      // Wait, let's check if it exists in actions.ts.
+      return (await import('@/lib/actions')).getServices();
+    },
+    initialData: initialServices
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, formData }: { id: string, formData: FormData }) => updateService(id, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      setEditingService(null);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+    }
+  });
 
   async function handleSubmit(formData: FormData) {
     if (editingService) {
-      await updateService(editingService.id, formData);
-      setEditingService(null);
+      updateMutation.mutate({ id: editingService.id, formData });
     } else {
-      await createService(formData);
+      createMutation.mutate(formData);
     }
   }
 
@@ -40,7 +73,7 @@ export default function AdminServicesClient({ initialServices }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-10">
         {/* Form Section */}
         <div className="lg:col-span-4">
-          <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-rose-soft/10 border border-rose-soft/40 space-y-8 relative sticky top-24">
+          <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-rose-soft/10 border border-rose-soft/40 space-y-8 sticky top-24">
             {editingService && (
               <div className="absolute top-6 right-6">
                 <button 
@@ -129,11 +162,19 @@ export default function AdminServicesClient({ initialServices }: Props) {
         {/* List Section */}
         <div className="lg:col-span-6 space-y-6">
           <div className="bg-white rounded-[2.5rem] shadow-xl shadow-rose-soft/10 border border-rose-soft/40 overflow-hidden">
-            <h2 className="px-10 py-7 border-b border-rose-soft/30 font-extrabold text-foreground bg-blush/10 flex items-center gap-3 tracking-tight">
-              <Sparkles className="w-5 h-5 text-mauve" /> Идэвхтэй үйлчилгээнүүд
+            <h2 className="px-10 py-7 border-b border-rose-soft/30 font-extrabold text-foreground bg-blush/10 flex items-center justify-between tracking-tight">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-5 h-5 text-mauve" /> Идэвхтэй үйлчилгээнүүд
+              </div>
+              <button 
+                onClick={() => refetch()}
+                className="p-2 bg-white border border-rose-soft/40 rounded-xl text-dusty hover:text-mauve hover:border-mauve transition-all"
+              >
+                <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+              </button>
             </h2>
             <div className="divide-y divide-rose-soft/30">
-              {initialServices.map((service) => (
+              {services.map((service: Service) => (
                 <div key={service.id} className="px-10 py-8 flex justify-between items-center group hover:bg-blush/5 transition-colors">
                   <div className="space-y-2">
                     <h3 className="text-xl font-extrabold text-foreground tracking-tight flex items-center gap-3">
@@ -167,17 +208,18 @@ export default function AdminServicesClient({ initialServices }: Props) {
                     <button
                       onClick={() => {
                         if (confirm('Энэ үйлчилгээг устгахдаа итгэлтэй байна уу?')) {
-                          deleteService(service.id);
+                          deleteMutation.mutate(service.id);
                         }
                       }}
-                      className="p-3 bg-white text-dusty hover:text-rose-500 hover:shadow-lg rounded-xl border border-rose-soft/40 transition-all active:scale-90"
+                      disabled={deleteMutation.isPending}
+                      className="p-3 bg-white text-dusty hover:text-rose-500 hover:shadow-lg rounded-xl border border-rose-soft/40 transition-all active:scale-90 disabled:opacity-50"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
               ))}
-              {initialServices.length === 0 && (
+              {services.length === 0 && (
                 <div className="px-10 py-24 text-center space-y-4">
                   <div className="w-20 h-20 bg-blush/20 rounded-3xl flex items-center justify-center mx-auto border border-rose-soft/40 opacity-40">
                     <Tag className="w-8 h-8 text-mauve" />

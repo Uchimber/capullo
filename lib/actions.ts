@@ -14,6 +14,8 @@ import {
 import { auth } from '@clerk/nextjs/server'
 import { cookies, headers } from 'next/headers'
 
+import { ServiceSchema, BookingSchema } from '@/lib/schema'
+
 async function checkAdmin() {
   const session = await auth()
   const metadata = session.sessionClaims?.metadata as { role?: string } | undefined
@@ -26,17 +28,16 @@ async function checkAdmin() {
 // SERVICES
 export async function createService(formData: FormData) {
   await checkAdmin()
-  const name = formData.get('name') as string
-  const duration = parseInt(formData.get('duration') as string)
-  const price = parseFloat(formData.get('price') as string)
-  const description = formData.get('description') as string
+  
+  const rawData = Object.fromEntries(formData.entries())
+  const validated = ServiceSchema.parse(rawData)
 
   await prisma.service.create({
     data: {
-      name,
-      duration,
-      price,
-      description
+      name: validated.name,
+      duration: validated.duration,
+      price: validated.price,
+      description: validated.description
     }
   })
 
@@ -46,18 +47,17 @@ export async function createService(formData: FormData) {
 
 export async function updateService(id: string, formData: FormData) {
   await checkAdmin()
-  const name = formData.get('name') as string
-  const duration = parseInt(formData.get('duration') as string)
-  const price = parseFloat(formData.get('price') as string)
-  const description = formData.get('description') as string
+  
+  const rawData = Object.fromEntries(formData.entries())
+  const validated = ServiceSchema.parse(rawData)
 
   await prisma.service.update({
     where: { id },
     data: {
-      name,
-      duration,
-      price,
-      description
+      name: validated.name,
+      duration: validated.duration,
+      price: validated.price,
+      description: validated.description
     }
   })
 
@@ -72,6 +72,14 @@ export async function deleteService(id: string) {
   })
   revalidatePath('/admin/services')
   revalidatePath('/')
+}
+
+export async function getServices() {
+  await checkAdmin()
+  const services = await prisma.service.findMany({
+    orderBy: { createdAt: "desc" },
+  })
+  return JSON.parse(JSON.stringify(services))
 }
 
 // BOOKINGS QUERY (with pagination, filter, search)
@@ -130,6 +138,7 @@ export async function getAdminBookings() {
   return JSON.parse(JSON.stringify(bookings))
 }
 
+
 // BOOKINGS
 export async function createBooking(data: {
   serviceId: string;
@@ -137,13 +146,15 @@ export async function createBooking(data: {
   customerPhone: string;
   startTime: Date;
 }) {
+  const validated = BookingSchema.parse(data)
+
   const service = await prisma.service.findUnique({
-    where: { id: data.serviceId }
+    where: { id: validated.serviceId }
   })
 
   if (!service) throw new Error('Үйлчилгээ олдсонгүй')
 
-  const startTime = new Date(data.startTime)
+  const startTime = new Date(validated.startTime)
   const endTime = new Date(startTime.getTime() + service.duration * 60000)
 
   // Senior Fix: Prevent Overlapping (Race Condition Check)
@@ -166,9 +177,9 @@ export async function createBooking(data: {
 
   const booking = await prisma.booking.create({
     data: {
-      serviceId: data.serviceId,
-      customerName: data.customerName,
-      customerPhone: data.customerPhone,
+      serviceId: validated.serviceId,
+      customerName: validated.customerName,
+      customerPhone: validated.customerPhone,
       startTime: startTime,
       endTime: endTime,
       status: 'PENDING'
@@ -193,21 +204,17 @@ export async function createBookingAndPay(data: {
   startTime: Date;
 }) {
   try {
-    // Validate phone: must be exactly 8 digits
-    const phoneClean = data.customerPhone.replace(/\s/g, '')
-    if (!/^\d{8}$/.test(phoneClean)) {
-      return { success: false, error: 'Утасны дугаар 8 оронтой тоо байх ёстой.' }
-    }
+    const validated = BookingSchema.parse(data)
 
     const service = await prisma.service.findUnique({
-      where: { id: data.serviceId }
+      where: { id: validated.serviceId }
     })
 
     if (!service) {
       return { success: false, error: 'Үйлчилгээ олдсонгүй' }
     }
 
-    const startTime = new Date(data.startTime)
+    const startTime = new Date(validated.startTime)
     const endTime = new Date(startTime.getTime() + service.duration * 60000)
 
     const activeWindow = new Date(Date.now() - 10 * 60 * 1000) // 10 min
@@ -235,9 +242,9 @@ export async function createBookingAndPay(data: {
     // Create the booking NOW (when user clicks Pay)
     const booking = await prisma.booking.create({
       data: {
-        serviceId: data.serviceId,
-        customerName: data.customerName,
-        customerPhone: data.customerPhone,
+        serviceId: validated.serviceId,
+        customerName: validated.customerName,
+        customerPhone: validated.customerPhone,
         startTime,
         endTime,
         status: 'PENDING'

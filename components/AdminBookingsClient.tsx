@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { getBookings, updateBookingStatus } from '@/lib/actions'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Check, X, Phone, User, Calendar, Clock, Sparkles,
   Search, ChevronLeft, ChevronRight, RefreshCw, Filter
@@ -30,38 +31,33 @@ const STATUS_TABS = [
 ]
 
 export default function AdminBookingsClient() {
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [activeStatus, setActiveStatus] = useState('PAID')
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal] = useState(0)
 
-  const fetchBookings = useCallback(async () => {
-    try {
-      const data = await getBookings({
-        page,
-        status: activeStatus,
-        search,
-        limit: 15,
-      })
-      setBookings(data.bookings)
-      setTotalPages(data.pages)
-      setTotal(data.total)
-    } catch (err) {
-      console.error('Failed to fetch bookings:', err)
-    } finally {
-      setLoading(false)
+  const { data, isLoading, isFetching, refetch } = useQuery({
+    queryKey: ['bookings', page, activeStatus, search],
+    queryFn: () => getBookings({
+      page,
+      status: activeStatus,
+      search,
+      limit: 15,
+    }),
+  })
+
+  const bookings = data?.bookings || []
+  const totalPages = data?.pages || 1
+  const total = data?.total || 0
+
+  const statusMutation = useMutation({
+    mutationFn: ({ bookingId, newStatus }: { bookingId: string; newStatus: string }) =>
+      updateBookingStatus(bookingId, newStatus),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] })
     }
-  }, [page, activeStatus, search])
-
-  // Initial load only, removed interval polling
-  useEffect(() => {
-    setLoading(true)
-    fetchBookings()
-  }, [fetchBookings])
+  })
 
   // Reset page when filter/search changes
   useEffect(() => {
@@ -69,8 +65,7 @@ export default function AdminBookingsClient() {
   }, [activeStatus, search])
 
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
-    await updateBookingStatus(bookingId, newStatus)
-    fetchBookings()
+    statusMutation.mutate({ bookingId, newStatus })
   }
 
   const handleSearch = (e: React.FormEvent) => {
@@ -160,14 +155,13 @@ export default function AdminBookingsClient() {
         
         <button 
           onClick={() => {
-            setLoading(true);
-            fetchBookings();
+            refetch();
           }}
-          disabled={loading}
+          disabled={isFetching}
           className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-soft/40 rounded-xl text-xs font-bold text-dusty hover:text-mauve hover:border-mauve transition-all disabled:opacity-50"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-mauve' : ''}`} />
-          {loading ? 'Шинэчилж байна...' : 'Шинэчлэх'}
+          <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-mauve' : ''}`} />
+          {isFetching ? 'Шинэчилж байна...' : 'Шинэчлэх'}
         </button>
       </div>
 
@@ -185,7 +179,7 @@ export default function AdminBookingsClient() {
               </tr>
             </thead>
             <tbody className="divide-y divide-rose-soft/20">
-              {bookings.map((booking) => (
+              {bookings.map((booking: Booking) => (
                 <tr key={booking.id} className="hover:bg-blush/5 transition-colors group">
                   <td className="px-8 py-6">
                     <div className="space-y-1.5">
@@ -248,7 +242,7 @@ export default function AdminBookingsClient() {
                   </td>
                 </tr>
               ))}
-              {!loading && bookings.length === 0 && (
+              {!isLoading && bookings.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-10 py-24 text-center text-dusty font-bold italic text-sm">
                     {search ? `"${search}" хайлтад тохирох захиалга олдсонгүй.` : 'Захиалга бүртгэгдээгүй байна.'}

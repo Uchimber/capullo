@@ -10,6 +10,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { mn } from "date-fns/locale";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAvailableSlots,
   createBooking,
@@ -42,8 +43,8 @@ interface Booking {
   id: string;
   customerName: string;
   customerPhone: string;
-  startTime: Date;
-  endTime: Date;
+  startTime: string;
+  endTime: string;
   serviceId: string;
   status: string;
   service: { name: string };
@@ -58,16 +59,14 @@ export default function AdminSchedulerClient({
   services,
   initialBookings,
 }: Props) {
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date>(
     startOfDay(new Date()),
   );
   const [baseDate, setBaseDate] = useState<Date>(
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   );
-  const [availableSlots, setAvailableSlots] = useState<Date[]>([]);
-  const [loading, setLoading] = useState(false);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
-  const [allBookings, setAllBookings] = useState<Booking[]>(initialBookings);
 
   const [formData, setFormData] = useState({
     serviceId: services[0]?.id || "",
@@ -76,65 +75,79 @@ export default function AdminSchedulerClient({
     startTime: "",
   });
 
+  // Queries
+  const { data: allBookings = initialBookings, isLoading: isBookingsLoading, isFetching: isBookingsFetching, refetch: refetchBookings } = useQuery({
+    queryKey: ['admin-bookings'],
+    queryFn: getAdminBookings,
+    initialData: initialBookings,
+  });
+
+  const { data: availableSlots = [], isLoading: isSlotsLoading } = useQuery({
+    queryKey: ['available-slots', selectedDate.toISOString(), formData.serviceId],
+    queryFn: () => getAvailableSlots(selectedDate, formData.serviceId, true),
+    enabled: !!formData.serviceId,
+  });
+
+  // Mutations
+  const bookingMutation = useMutation({
+    mutationFn: createBooking,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+      setFormData({
+        ...formData,
+        customerName: "",
+        customerPhone: "",
+        startTime: "",
+      });
+    }
+  });
+
+  const rescheduleMutation = useMutation({
+    mutationFn: ({ id, newStartTime }: { id: string, newStartTime: Date }) => rescheduleBooking(id, newStartTime),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+      setReschedulingId(null);
+    }
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string, status: string }) => updateBookingStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+    }
+  });
+
+  const blockMutation = useMutation({
+    mutationFn: blockSlot,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+    }
+  });
+
   const dates = Array.from({ length: 7 }, (_, i) => addDays(baseDate, i));
 
-  const currentDayBookings = allBookings.filter((b) =>
+  const currentDayBookings = allBookings.filter((b: Booking) =>
     isSameDay(new Date(b.startTime), selectedDate),
   );
-  // Auto-refresh removed, keeping function for manual use
-  const refreshBookings = async () => {
-    try {
-      setLoading(true);
-      const fresh = await getAdminBookings();
-      setAllBookings(fresh);
-    } catch (err) {
-      console.error('Failed to refresh bookings:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let active = true;
-    async function fetchSlots() {
-      if (!formData.serviceId) return;
-      // Removed setLoading(true) here so background refresh doesn't cause visual flicker
-      const slots = await getAvailableSlots(
-        selectedDate,
-        formData.serviceId,
-        true,
-      );
-      if (active) {
-        setAvailableSlots(slots);
-        // Note: loading state is now managed mostly by refresh button
-      }
-    }
-    fetchSlots();
-    return () => { active = false; };
-  }, [selectedDate, formData.serviceId, allBookings]);
 
   const handleManualBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.startTime) return;
 
-    await createBooking({
+    bookingMutation.mutate({
       serviceId: formData.serviceId,
       customerName: formData.customerName,
       customerPhone: formData.customerPhone,
       startTime: new Date(formData.startTime),
     });
-
-    setFormData({
-      ...formData,
-      customerName: "",
-      customerPhone: "",
-      startTime: "",
-    });
   };
 
   const handleReschedule = async (bookingId: string, newTime: Date) => {
-    await rescheduleBooking(bookingId, newTime);
-    setReschedulingId(null);
+    rescheduleMutation.mutate({ id: bookingId, newStartTime: newTime });
   };
 
   const handleBlockSlot = async (slot: Date) => {
@@ -149,16 +162,11 @@ export default function AdminSchedulerClient({
       return;
     }
 
-    try {
-      await blockSlot({
-        serviceId: formData.serviceId,
-        startTime: slot,
-        duration: duration,
-      });
-      refreshBookings();
-    } catch (e: any) {
-      alert(e.message || "Алдаа гарлаа");
-    }
+    blockMutation.mutate({
+      serviceId: formData.serviceId,
+      startTime: slot,
+      duration: duration,
+    });
   };
 
   const goToToday = () => {
@@ -207,12 +215,12 @@ export default function AdminSchedulerClient({
             </div>
             <div className="border-l border-rose-soft/40 pl-2">
               <button
-                onClick={refreshBookings}
-                disabled={loading}
+                onClick={() => refetchBookings()}
+                disabled={isBookingsFetching}
                 title="Мэдээллийг шинэчлэх"
                 className="p-2 mr-1 bg-mauve/10 hover:bg-mauve/20 rounded-xl transition-colors text-mauve hover:text-accent-dark outline-none disabled:opacity-50"
               >
-                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-5 h-5 ${isBookingsFetching ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
@@ -274,7 +282,7 @@ export default function AdminSchedulerClient({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {currentDayBookings.map((booking) => (
+                  {currentDayBookings.map((booking: Booking) => (
                     <div
                       key={booking.id}
                       className={`group relative bg-white rounded-4xl border p-7 hover:shadow-xl hover:-translate-y-0.5 transition-all border-l-8 ${
@@ -406,7 +414,7 @@ export default function AdminSchedulerClient({
               </p>
 
               <div className="grid grid-cols-2 gap-3">
-                {loading ? (
+                {isSlotsLoading ? (
                   <div className="col-span-2 py-10 flex justify-center">
                     <RefreshCw className="animate-spin text-mauve" />
                   </div>
@@ -498,7 +506,7 @@ export default function AdminSchedulerClient({
                     <span className="text-mauve/60">{format(selectedDate, "dd", { locale: mn })}-нд</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2.5 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
-                    {loading ? (
+                    {isSlotsLoading ? (
                       <div className="col-span-2 py-6 flex justify-center">
                         <RefreshCw className="animate-spin text-mauve/30 w-5 h-5" />
                       </div>

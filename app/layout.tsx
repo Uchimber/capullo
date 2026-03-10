@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Nunito } from "next/font/google";
+import { Nunito, Geist } from "next/font/google";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -14,6 +14,11 @@ export const metadata: Metadata = {
 };
 
 import { ClerkProvider } from '@clerk/nextjs'
+import Providers from "@/components/Providers";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 export default function RootLayout({
   children,
@@ -22,11 +27,13 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="mn" suppressHydrationWarning>
+      <html lang="mn" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
         <body
           className={`${nunito.variable} antialiased`}
         >
-          {children}
+          <Providers>
+            {children}
+          </Providers>
         </body>
       </html>
     </ClerkProvider>

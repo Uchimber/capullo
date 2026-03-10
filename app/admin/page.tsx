@@ -4,6 +4,8 @@ import { mn } from "date-fns/locale";
 import { Briefcase as ServiceIcon, Calendar, DollarSign, ArrowRight, Sparkles, User, Clock } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminDashboard() {
   const [servicesCount, bookingsCount, bookings] = await Promise.all([
     prisma.service.count(),
@@ -113,7 +115,7 @@ export default async function AdminDashboard() {
           ))}
           {bookings.length === 0 && (
             <div className="px-10 py-24 text-center space-y-4">
-              <div className="w-20 h-20 bg-blush/20 rounded-[2rem] flex items-center justify-center mx-auto border border-rose-soft/40 opacity-40">
+              <div className="w-20 h-20 bg-blush/20 rounded-4xl flex items-center justify-center mx-auto border border-rose-soft/40 opacity-40">
                 <Calendar className="w-8 h-8 text-mauve" />
               </div>
               <p className="text-dusty font-bold italic text-sm">Одоогоор захиалга байхгүй байна.</p>
