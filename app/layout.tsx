@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 import { ClerkProvider } from '@clerk/nextjs'
 import Providers from "@/components/Providers";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -33,6 +34,7 @@ export default function RootLayout({
         >
           <Providers>
             {children}
+            <Toaster position="top-center" richColors />
           </Providers>
         </body>
       </html>

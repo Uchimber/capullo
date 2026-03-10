@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { getBookings, updateBookingStatus } from '@/lib/actions'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 import {
   Check, X, Phone, User, Calendar, Clock, Sparkles,
   Search, ChevronLeft, ChevronRight, RefreshCw, Filter
@@ -56,6 +58,10 @@ export default function AdminBookingsClient() {
       updateBookingStatus(bookingId, newStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
+      toast.success("Захиалгын төлөв шинэчлэгдлээ")
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Алдаа гарлаа")
     }
   })
 

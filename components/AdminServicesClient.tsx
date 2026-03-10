@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Plus, Trash2, Edit2, X, Save, Clock, Tag, Sparkles, RefreshCw } from "lucide-react";
 import { createService, updateService, deleteService, getServices } from "@/lib/actions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface Service {
   id: string;
@@ -35,6 +37,10 @@ export default function AdminServicesClient({ initialServices }: Props) {
     mutationFn: createService,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast.success("Үйлчилгээ амжилттай нэмэгдлээ");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Алдаа гарлаа");
     }
   });
 
@@ -43,6 +49,10 @@ export default function AdminServicesClient({ initialServices }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
       setEditingService(null);
+      toast.success("Үйлчилгээ амжилттай шинэчлэгдлээ");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Алдаа гарлаа");
     }
   });
 
@@ -50,6 +60,10 @@ export default function AdminServicesClient({ initialServices }: Props) {
     mutationFn: deleteService,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast.success("Үйлчилгээ устгагдлаа");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Алдаа гарлаа");
     }
   });
 
@@ -141,20 +155,23 @@ export default function AdminServicesClient({ initialServices }: Props) {
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
-                className={`w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] shadow-xl flex items-center justify-center gap-2 ${
+                disabled={createMutation.isPending || updateMutation.isPending}
+                className={`w-full h-auto py-4 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] shadow-xl flex items-center justify-center gap-2 ${
                   editingService 
-                    ? "bg-foreground text-white shadow-foreground/20" 
-                    : "bg-mauve text-white shadow-mauve/20"
+                    ? "bg-foreground text-white shadow-foreground/20 hover:bg-foreground/90" 
+                    : "bg-mauve text-white shadow-mauve/20 hover:bg-mauve/90"
                 }`}
               >
-                {editingService ? (
+                {createMutation.isPending || updateMutation.isPending ? (
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                ) : editingService ? (
                   <><Save className="w-5 h-5" /> Хадгалах</>
                 ) : (
                   <><Plus className="w-5 h-5" /> Нэмэх</>
                 )}
-              </button>
+              </Button>
             </form>
           </div>
         </div>

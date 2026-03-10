@@ -11,6 +11,8 @@ import {
 } from "date-fns";
 import { mn } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   getAvailableSlots,
   createBooking,
@@ -100,6 +102,10 @@ export default function AdminSchedulerClient({
         customerPhone: "",
         startTime: "",
       });
+      toast.success("Захиалга амжилттай үүслээ");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Алдаа гарлаа");
     }
   });
 
@@ -109,6 +115,10 @@ export default function AdminSchedulerClient({
       queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['available-slots'] });
       setReschedulingId(null);
+      toast.success("Цаг амжилттай шилжүүллээ");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Алдаа гарлаа");
     }
   });
 
@@ -117,6 +127,10 @@ export default function AdminSchedulerClient({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+      toast.success("Төлөв шинэчлэгдлээ");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Алдаа гарлаа");
     }
   });
 
@@ -125,6 +139,10 @@ export default function AdminSchedulerClient({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+      toast.success("Цаг амжилттай блоклолоо");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Алдаа гарлаа");
     }
   });
 
