@@ -1,55 +1,52 @@
-'use server'
+"use server";
 
-import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
-import { 
-  addMinutes, 
-  startOfDay, 
-  endOfDay, 
-  isBefore, 
-  setHours, 
-  setMinutes 
-} from 'date-fns'
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { addMinutes, startOfDay, endOfDay, isBefore } from "date-fns";
 
-import { auth } from '@clerk/nextjs/server'
-import { cookies, headers } from 'next/headers'
+import { Prisma } from "@prisma/client";
 
-import { ServiceSchema, BookingSchema } from '@/lib/schema'
+import { auth } from "@clerk/nextjs/server";
+import { cookies, headers } from "next/headers";
+
+import { ServiceSchema, BookingSchema } from "@/lib/schema";
 
 async function checkAdmin() {
-  const session = await auth()
-  const metadata = session.sessionClaims?.metadata as { role?: string } | undefined
-  const role = metadata?.role
+  const session = await auth();
+  const metadata = session.sessionClaims?.metadata as
+    | { role?: string }
+    | undefined;
+  const role = metadata?.role;
   if (role !== "admin") {
-    throw new Error('Энэ үйлдлийг хийхэд админ эрх шаардлагатай.')
+    throw new Error("Энэ үйлдлийг хийхэд админ эрх шаардлагатай.");
   }
 }
 
 // SERVICES
 export async function createService(formData: FormData) {
-  await checkAdmin()
-  
-  const rawData = Object.fromEntries(formData.entries())
-  const validated = ServiceSchema.parse(rawData)
+  await checkAdmin();
+
+  const rawData = Object.fromEntries(formData.entries());
+  const validated = ServiceSchema.parse(rawData);
 
   await prisma.service.create({
     data: {
       name: validated.name,
       duration: validated.duration,
       price: validated.price,
-      description: validated.description
-    }
-  })
+      description: validated.description,
+    },
+  });
 
-  revalidatePath('/admin/services')
-  revalidatePath('/')
+  revalidatePath("/admin/services");
+  revalidatePath("/");
 }
 
 export async function updateService(id: string, formData: FormData) {
-  await checkAdmin()
-  
-  const rawData = Object.fromEntries(formData.entries())
-  const validated = ServiceSchema.parse(rawData)
+  await checkAdmin();
+
+  const rawData = Object.fromEntries(formData.entries());
+  const validated = ServiceSchema.parse(rawData);
 
   await prisma.service.update({
     where: { id },
@@ -57,29 +54,29 @@ export async function updateService(id: string, formData: FormData) {
       name: validated.name,
       duration: validated.duration,
       price: validated.price,
-      description: validated.description
-    }
-  })
+      description: validated.description,
+    },
+  });
 
-  revalidatePath('/admin/services')
-  revalidatePath('/')
+  revalidatePath("/admin/services");
+  revalidatePath("/");
 }
 
 export async function deleteService(id: string) {
-  await checkAdmin()
+  await checkAdmin();
   await prisma.service.delete({
-    where: { id }
-  })
-  revalidatePath('/admin/services')
-  revalidatePath('/')
+    where: { id },
+  });
+  revalidatePath("/admin/services");
+  revalidatePath("/");
 }
 
 export async function getServices() {
-  await checkAdmin()
+  await checkAdmin();
   const services = await prisma.service.findMany({
     orderBy: { createdAt: "desc" },
-  })
-  return JSON.parse(JSON.stringify(services))
+  });
+  return JSON.parse(JSON.stringify(services));
 }
 
 // BOOKINGS QUERY (with pagination, filter, search)
@@ -89,55 +86,53 @@ export async function getBookings(params: {
   status?: string;
   search?: string;
 }) {
-  await checkAdmin()
-  const page = params.page || 1
-  const limit = params.limit || 15
-  const skip = (page - 1) * limit
+  await checkAdmin();
+  const page = params.page || 1;
+  const limit = params.limit || 15;
+  const skip = (page - 1) * limit;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {}
-  
-  if (params.status && params.status !== 'ALL') {
-    where.status = params.status
+  const where: Prisma.BookingWhereInput = {};
+
+  if (params.status && params.status !== "ALL") {
+    where.status = params.status;
   }
 
   if (params.search && params.search.trim()) {
-    const q = params.search.trim()
+    const q = params.search.trim();
     where.OR = [
-      { customerName: { contains: q, mode: 'insensitive' } },
-      { customerPhone: { contains: q, mode: 'insensitive' } },
-    ]
+      { customerName: { contains: q, mode: "insensitive" } },
+      { customerPhone: { contains: q, mode: "insensitive" } },
+    ];
   }
 
   const [bookings, total] = await Promise.all([
     prisma.booking.findMany({
       where,
-      orderBy: { startTime: 'desc' },
+      orderBy: { startTime: "desc" },
       include: { service: true },
       skip,
       take: limit,
     }),
     prisma.booking.count({ where }),
-  ])
+  ]);
 
   return {
     bookings: JSON.parse(JSON.stringify(bookings)), // Serialize dates
     total,
     pages: Math.ceil(total / limit),
     page,
-  }
+  };
 }
 
 // For scheduler auto-refresh
 export async function getAdminBookings() {
-  await checkAdmin()
+  await checkAdmin();
   const bookings = await prisma.booking.findMany({
     include: { service: true },
-    orderBy: { startTime: 'asc' },
-  })
-  return JSON.parse(JSON.stringify(bookings))
+    orderBy: { startTime: "asc" },
+  });
+  return JSON.parse(JSON.stringify(bookings));
 }
-
 
 // BOOKINGS
 export async function createBooking(data: {
@@ -146,33 +141,35 @@ export async function createBooking(data: {
   customerPhone: string;
   startTime: Date;
 }) {
-  const validated = BookingSchema.parse(data)
+  const validated = BookingSchema.parse(data);
 
   const service = await prisma.service.findUnique({
-    where: { id: validated.serviceId }
-  })
+    where: { id: validated.serviceId },
+  });
 
-  if (!service) throw new Error('Үйлчилгээ олдсонгүй')
+  if (!service) throw new Error("Үйлчилгээ олдсонгүй");
 
-  const startTime = new Date(validated.startTime)
-  const endTime = new Date(startTime.getTime() + service.duration * 60000)
+  const startTime = new Date(validated.startTime);
+  const endTime = new Date(startTime.getTime() + service.duration * 60000);
 
   // Senior Fix: Prevent Overlapping (Race Condition Check)
   // Check if slot is already occupied right before creating
   const existingBooking = await prisma.booking.findFirst({
     where: {
-      status: { not: 'CANCELLED' },
+      status: { not: "CANCELLED" },
       OR: [
         {
           startTime: { lt: endTime },
-          endTime: { gt: startTime }
-        }
-      ]
-    }
-  })
+          endTime: { gt: startTime },
+        },
+      ],
+    },
+  });
 
   if (existingBooking) {
-    throw new Error('Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.')
+    throw new Error(
+      "Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.",
+    );
   }
 
   const booking = await prisma.booking.create({
@@ -182,16 +179,16 @@ export async function createBooking(data: {
       customerPhone: validated.customerPhone,
       startTime: startTime,
       endTime: endTime,
-      status: 'PENDING'
-    }
-  })
+      status: "PENDING",
+    },
+  });
 
   // Consistently revalidate all relevant paths
-  revalidatePath('/admin/bookings')
-  revalidatePath('/admin/scheduler')
-  revalidatePath('/admin')
-  
-  return booking
+  revalidatePath("/admin/bookings");
+  revalidatePath("/admin/scheduler");
+  revalidatePath("/admin");
+
+  return booking;
 }
 
 // Combined: Create Booking + Pay in one action
@@ -204,20 +201,20 @@ export async function createBookingAndPay(data: {
   startTime: Date;
 }) {
   try {
-    const validated = BookingSchema.parse(data)
+    const validated = BookingSchema.parse(data);
 
     const service = await prisma.service.findUnique({
-      where: { id: validated.serviceId }
-    })
+      where: { id: validated.serviceId },
+    });
 
     if (!service) {
-      return { success: false, error: 'Үйлчилгээ олдсонгүй' }
+      return { success: false, error: "Үйлчилгээ олдсонгүй" };
     }
 
-    const startTime = new Date(validated.startTime)
-    const endTime = new Date(startTime.getTime() + service.duration * 60000)
+    const startTime = new Date(validated.startTime);
+    const endTime = new Date(startTime.getTime() + service.duration * 60000);
 
-    const activeWindow = new Date(Date.now() - 10 * 60 * 1000) // 10 min
+    const activeWindow = new Date(Date.now() - 10 * 60 * 1000); // 10 min
 
     // Check for overlap with paid/confirmed/blocked AND active pending bookings
     const existingBooking = await prisma.booking.findFirst({
@@ -225,18 +222,22 @@ export async function createBookingAndPay(data: {
         startTime: { lt: endTime },
         endTime: { gt: startTime },
         OR: [
-          { status: { in: ['PAID', 'CONFIRMED', 'BLOCKED'] } },
+          { status: { in: ["PAID", "CONFIRMED", "BLOCKED"] } },
           {
-            status: 'PENDING',
+            status: "PENDING",
             paymentId: { not: null },
-            createdAt: { gte: activeWindow }
-          }
-        ]
-      }
-    })
+            createdAt: { gte: activeWindow },
+          },
+        ],
+      },
+    });
 
     if (existingBooking) {
-      return { success: false, error: 'Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.' }
+      return {
+        success: false,
+        error:
+          "Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.",
+      };
     }
 
     // Create the booking NOW (when user clicks Pay)
@@ -247,24 +248,27 @@ export async function createBookingAndPay(data: {
         customerPhone: validated.customerPhone,
         startTime,
         endTime,
-        status: 'PENDING'
-      }
-    })
+        status: "PENDING",
+      },
+    });
 
     // Create invoice via Bonum
-    const invoiceResult = await createBonumInvoice(booking.id)
+    const invoiceResult = await createBonumInvoice(booking.id);
 
     if (!invoiceResult.success) {
       // If invoice creation failed, delete the booking so it doesn't block the slot
-      await prisma.booking.delete({ where: { id: booking.id } })
-      return { success: false, error: invoiceResult.error || 'Төлбөрийн нэхэмжлэх үүсгэж чадсангүй.' }
+      await prisma.booking.delete({ where: { id: booking.id } });
+      return {
+        success: false,
+        error: invoiceResult.error || "Төлбөрийн нэхэмжлэх үүсгэж чадсангүй.",
+      };
     }
 
-    return { success: true, followUpLink: invoiceResult.followUpLink }
+    return { success: true, followUpLink: invoiceResult.followUpLink };
   } catch (err) {
-    const error = err as Error
-    console.error('createBookingAndPay error:', error)
-    return { success: false, error: `Системд алдаа гарлаа: ${error.message}` }
+    const error = err as Error;
+    console.error("createBookingAndPay error:", error);
+    return { success: false, error: `Системд алдаа гарлаа: ${error.message}` };
   }
 }
 
@@ -273,259 +277,268 @@ export async function blockSlot(data: {
   startTime: Date;
   duration?: number;
 }) {
-  await checkAdmin()
+  await checkAdmin();
   const service = await prisma.service.findUnique({
-    where: { id: data.serviceId }
-  })
-  if (!service) throw new Error('Үйлчилгээ олдсонгүй')
+    where: { id: data.serviceId },
+  });
+  if (!service) throw new Error("Үйлчилгээ олдсонгүй");
 
-  const startTime = new Date(data.startTime)
-  const blockDuration = data.duration || service.duration
-  const endTime = new Date(startTime.getTime() + blockDuration * 60000)
+  const startTime = new Date(data.startTime);
+  const blockDuration = data.duration || service.duration;
+  const endTime = new Date(startTime.getTime() + blockDuration * 60000);
 
   // Use the same overlap check logic
   const existingBooking = await prisma.booking.findFirst({
     where: {
-      status: { not: 'CANCELLED' },
+      status: { not: "CANCELLED" },
       startTime: { lt: endTime },
-      endTime: { gt: startTime }
-    }
-  })
+      endTime: { gt: startTime },
+    },
+  });
 
-  // We allow overlapping blocked slots to prevent admin frustration? 
+  // We allow overlapping blocked slots to prevent admin frustration?
   // Wait, no. We throw an error. But maybe allow if it's just blocking?
   // Let's keep the throw for now to prevent true overlaps.
-  if (existingBooking) throw new Error('Энэ цаг өөр захиалгатай давхцаж байна.')
+  if (existingBooking)
+    throw new Error("Энэ цаг өөр захиалгатай давхцаж байна.");
 
   // Create the "booking" for BLOCKED
   await prisma.booking.create({
     data: {
       serviceId: data.serviceId,
-      customerName: 'ЗАВГҮЙ / БЛОК',
-      customerPhone: 'ADMIN',
+      customerName: "ЗАВГҮЙ / БЛОК",
+      customerPhone: "ADMIN",
       startTime,
       endTime,
-      status: 'BLOCKED'
-    }
-  })
+      status: "BLOCKED",
+    },
+  });
 
-  revalidatePath('/admin/scheduler')
-  revalidatePath('/admin')
+  revalidatePath("/admin/scheduler");
+  revalidatePath("/admin");
 }
 
 export async function updateBookingStatus(id: string, status: string) {
-  await checkAdmin()
+  await checkAdmin();
   await prisma.booking.update({
     where: { id },
-    data: { status }
-  })
-  revalidatePath('/admin/bookings')
-  revalidatePath('/admin/scheduler')
-  revalidatePath('/admin')
+    data: { status },
+  });
+  revalidatePath("/admin/bookings");
+  revalidatePath("/admin/scheduler");
+  revalidatePath("/admin");
 }
 
 export async function rescheduleBooking(id: string, newStartTime: Date) {
-  await checkAdmin()
+  await checkAdmin();
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { service: true }
-  })
+    include: { service: true },
+  });
 
-  if (!booking) throw new Error('Захиалга олдсонгүй')
-  const endTime = new Date(newStartTime.getTime() + booking.service.duration * 60000)
+  if (!booking) throw new Error("Захиалга олдсонгүй");
+  const endTime = new Date(
+    newStartTime.getTime() + booking.service.duration * 60000,
+  );
 
   // Overlap check for rescheduling too
   const existingBooking = await prisma.booking.findFirst({
     where: {
       id: { not: id },
-      status: { not: 'CANCELLED' },
+      status: { not: "CANCELLED" },
       OR: [
         {
           startTime: { lt: endTime },
-          endTime: { gt: newStartTime }
-        }
-      ]
-    }
-  })
+          endTime: { gt: newStartTime },
+        },
+      ],
+    },
+  });
 
   if (existingBooking) {
-    throw new Error('Энэ цаг өөр захиалгатай давхцаж байна.')
+    throw new Error("Энэ цаг өөр захиалгатай давхцаж байна.");
   }
 
   await prisma.booking.update({
     where: { id },
     data: {
       startTime: newStartTime,
-      endTime: endTime
-    }
-  })
+      endTime: endTime,
+    },
+  });
 
-  revalidatePath('/admin/bookings')
-  revalidatePath('/admin/scheduler')
-  revalidatePath('/admin')
+  revalidatePath("/admin/bookings");
+  revalidatePath("/admin/scheduler");
+  revalidatePath("/admin");
 }
 
 // WORKING HOURS
 export async function updateAllWorkingHours(formData: FormData) {
-  await checkAdmin()
-  const updates = []
-  
+  await checkAdmin();
+  const updates = [];
+
   for (let i = 0; i < 7; i++) {
-    const startTime = formData.get(`startTime_${i}`) as string
-    const endTime = formData.get(`endTime_${i}`) as string
-    const isActive = formData.get(`isActive_${i}`) === 'on'
+    const startTime = formData.get(`startTime_${i}`) as string;
+    const endTime = formData.get(`endTime_${i}`) as string;
+    const isActive = formData.get(`isActive_${i}`) === "on";
 
     if (startTime && endTime) {
       updates.push(
         prisma.workingHours.upsert({
           where: { dayOfWeek: i },
           update: { startTime, endTime, isActive },
-          create: { dayOfWeek: i, startTime, endTime, isActive }
-        })
-      )
+          create: { dayOfWeek: i, startTime, endTime, isActive },
+        }),
+      );
     }
   }
 
   // Senior Fix: Use Transaction for atomic mass updates
-  await prisma.$transaction(updates)
-  
-  revalidatePath('/admin/settings')
+  await prisma.$transaction(updates);
+
+  revalidatePath("/admin/settings");
 }
 
-export async function getAvailableSlots(date: Date, serviceId: string, isAdmin: boolean = false) {
+export async function getAvailableSlots(
+  date: Date,
+  serviceId: string,
+  isAdmin: boolean = false,
+) {
   const service = await prisma.service.findUnique({
-    where: { id: serviceId }
-  })
-  if (!service) return []
+    where: { id: serviceId },
+  });
+  if (!service) return [];
 
   // Ensure we are looking at the correct day of week in local time
-  const dayOfWeek = date.getDay()
+  const dayOfWeek = date.getDay();
   const workingHours = await prisma.workingHours.findUnique({
-    where: { dayOfWeek }
-  })
+    where: { dayOfWeek },
+  });
 
   // If no working hours or not active, return empty
-  if (!workingHours || !workingHours.isActive) return []
+  if (!workingHours || !workingHours.isActive) return [];
 
-  // CLEANUP: Delete very old PENDING bookings that never clicked "Pay" 
+  // CLEANUP: Delete very old PENDING bookings that never clicked "Pay"
   // to keep the database and admin dashboard clean.
-  const cleanupTime = new Date(Date.now() - 30 * 60 * 1000) // 30 mins
+  const cleanupTime = new Date(Date.now() - 30 * 60 * 1000); // 30 mins
   try {
     await prisma.booking.deleteMany({
       where: {
-        status: 'PENDING',
+        status: "PENDING",
         paymentId: null,
-        createdAt: { lt: cleanupTime }
-      }
-    })
+        createdAt: { lt: cleanupTime },
+      },
+    });
   } catch (e) {
-    console.error('Cleanup error:', e)
+    console.error("Cleanup error:", e);
   }
 
-  const activeWindow = new Date(Date.now() - 15 * 60 * 1000) // 15 minute window
+  const activeWindow = new Date(Date.now() - 15 * 60 * 1000); // 15 minute window
 
   const bookings = await prisma.booking.findMany({
     where: {
       startTime: {
         gte: startOfDay(date),
-        lte: endOfDay(date)
+        lte: endOfDay(date),
       },
       OR: [
-        { status: 'PAID' },
-        { status: 'CONFIRMED' },
-        { status: 'BLOCKED' },
-        { 
-          status: 'PENDING',
+        { status: "PAID" },
+        { status: "CONFIRMED" },
+        { status: "BLOCKED" },
+        {
+          status: "PENDING",
           paymentId: { not: null }, // Only block if they actually clicked "Pay" (and thus generated an invoice)
-          createdAt: { gte: activeWindow }
-        }
-      ]
-    }
-  })
+          createdAt: { gte: activeWindow },
+        },
+      ],
+    },
+  });
 
-  const slots = []
-  const [startHour, startMin] = workingHours.startTime.split(':').map(Number)
-  const [endHour, endMin] = workingHours.endTime.split(':').map(Number)
+  const slots = [];
+  const [startHour, startMin] = workingHours.startTime.split(":").map(Number);
+  const [endHour, endMin] = workingHours.endTime.split(":").map(Number);
 
   // Use the date object passed from client but set explicit hours in local time
-  let currentSlot = new Date(date)
-  currentSlot.setHours(startHour, startMin, 0, 0)
-  
-  const endLimit = new Date(date)
-  endLimit.setHours(endHour, endMin, 0, 0)
+  let currentSlot = new Date(date);
+  currentSlot.setHours(startHour, startMin, 0, 0);
 
-  const now = new Date()
-  const bufferTime = isAdmin ? now : addMinutes(now, 120) // 2 hour buffer for public
+  const endLimit = new Date(date);
+  endLimit.setHours(endHour, endMin, 0, 0);
+
+  const now = new Date();
+  const bufferTime = isAdmin ? now : addMinutes(now, 120); // 2 hour buffer for public
 
   while (isBefore(currentSlot, endLimit)) {
-    const slotEnd = addMinutes(currentSlot, service.duration)
-    
-    if (isBefore(endLimit, slotEnd)) break
+    const slotEnd = addMinutes(currentSlot, service.duration);
+
+    if (isBefore(endLimit, slotEnd)) break;
 
     // Check if slot is in the past or within buffer (if not admin)
-    const isPastOrBuffered = isBefore(currentSlot, bufferTime)
+    const isPastOrBuffered = isBefore(currentSlot, bufferTime);
 
     const isOccupied = bookings.some((booking) => {
-      const bStart = new Date(booking.startTime)
-      const bEnd = new Date(booking.endTime)
+      const bStart = new Date(booking.startTime);
+      const bEnd = new Date(booking.endTime);
       // Overlap check
-      return (currentSlot < bEnd && slotEnd > bStart)
-    })
+      return currentSlot < bEnd && slotEnd > bStart;
+    });
 
     if (!isOccupied && !isPastOrBuffered) {
-      slots.push(new Date(currentSlot))
+      slots.push(new Date(currentSlot));
     }
 
-    currentSlot = addMinutes(currentSlot, 30) // 30 min intervals
+    currentSlot = addMinutes(currentSlot, 30); // 30 min intervals
   }
 
-  return slots
+  return slots;
 }
 
 // BUSINESS SETTINGS
 export async function updateBusinessSettings(formData: FormData) {
-  await checkAdmin()
-  const phone = formData.get('phone') as string
-  const address = formData.get('address') as string
+  await checkAdmin();
+  const phone = formData.get("phone") as string;
+  const address = formData.get("address") as string;
 
   await prisma.businessSettings.upsert({
-    where: { id: 'singleton' },
+    where: { id: "singleton" },
     update: { phone, address },
-    create: { id: 'singleton', phone, address }
-  })
+    create: { id: "singleton", phone, address },
+  });
 
-  revalidatePath('/admin/settings')
-  revalidatePath('/')
+  revalidatePath("/admin/settings");
+  revalidatePath("/");
 }
 
 export async function getBusinessSettings() {
   const settings = await prisma.businessSettings.findUnique({
-    where: { id: 'singleton' }
-  })
-  
+    where: { id: "singleton" },
+  });
+
   if (!settings) {
     return {
       phone: "98118008",
-      address: "СБД 1-р хороо, 5-р хороолол 14251, Чингисийн өргөн чөлөө. \"Бизнес плаза\" төв. 302 тоот өрөө."
-    }
+      address:
+        'СБД 1-р хороо, 5-р хороолол 14251, Чингисийн өргөн чөлөө. "Бизнес плаза" төв. 302 тоот өрөө.',
+    };
   }
-  
-  return settings
+
+  return settings;
 }
 
 // BONUM PAYMENT INTEGRATION
-const BONUM_TERMINAL_ID = "17172267"
-const BONUM_SECRET_KEY = "1fc53f9389f489ff6e04617bd6338a710e1e7c579cb572aec421f560f363119c0e0039e4b765e53c5339c1e6c7727985a488ab4ac8141140571256af36c3f410421b2ff278fb499b10e3bdb7d3236212"
-const BONUM_BASE_URL = "https://apis.bonum.mn"
+const BONUM_TERMINAL_ID = "17172267";
+const BONUM_SECRET_KEY =
+  "1fc53f9389f489ff6e04617bd6338a710e1e7c579cb572aec421f560f363119c0e0039e4b765e53c5339c1e6c7727985a488ab4ac8141140571256af36c3f410421b2ff278fb499b10e3bdb7d3236212";
+const BONUM_BASE_URL = "https://apis.bonum.mn";
 
-import crypto from 'crypto'
+import crypto from "crypto";
 
 function generateChecksum(body: Record<string, unknown>): string {
-  const rawBody = JSON.stringify(body)
+  const rawBody = JSON.stringify(body);
   return crypto
-    .createHmac('sha256', BONUM_SECRET_KEY)
+    .createHmac("sha256", BONUM_SECRET_KEY)
     .update(rawBody)
-    .digest('hex')
+    .digest("hex");
 }
 
 export async function createBonumInvoice(bookingId: string) {
@@ -533,67 +546,82 @@ export async function createBonumInvoice(bookingId: string) {
   try {
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { service: true }
-    })
+      include: { service: true },
+    });
 
     if (!booking) {
       console.error(`Booking not found: ${bookingId}`);
-      return { success: false, error: 'Захиалга олдсонгүй' };
+      return { success: false, error: "Захиалга олдсонгүй" };
     }
 
     // 1. Get Access Token
     console.log("Fetching Bonum access token...");
-    const authRes = await fetch(`${BONUM_BASE_URL}/bonum-gateway/ecommerce/auth/create`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `AppSecret ${BONUM_SECRET_KEY}`,
-        'X-TERMINAL-ID': BONUM_TERMINAL_ID
+    const authRes = await fetch(
+      `${BONUM_BASE_URL}/bonum-gateway/ecommerce/auth/create`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `AppSecret ${BONUM_SECRET_KEY}`,
+          "X-TERMINAL-ID": BONUM_TERMINAL_ID,
+        },
+        cache: "no-store",
       },
-      cache: 'no-store'
-    })
+    );
 
     if (!authRes.ok) {
-      const errorText = await authRes.text()
-      console.error('Bonum Auth error response:', errorText)
-      return { success: false, error: `Төлбөрийн системд нэвтэрч чадсангүй (${authRes.status})` };
+      const errorText = await authRes.text();
+      console.error("Bonum Auth error response:", errorText);
+      return {
+        success: false,
+        error: `Төлбөрийн системд нэвтэрч чадсангүй (${authRes.status})`,
+      };
     }
 
-    const authData = await authRes.json()
+    const authData = await authRes.json();
     const accessToken = authData.accessToken || authData.body?.accessToken;
 
     if (!accessToken) {
-      console.error('Bonum Auth failed: No accessToken in response', authData);
-      return { success: false, error: 'Төлбөрийн системээс зөвшөөрөл авч чадсангүй.' };
+      console.error("Bonum Auth failed: No accessToken in response", authData);
+      return {
+        success: false,
+        error: "Төлбөрийн системээс зөвшөөрөл авч чадсангүй.",
+      };
     }
 
     // 2. Create Invoice
-    const headersList = await headers()
-    const host = headersList.get('host') || 'capullo-production.up.railway.app'
-    const forwardedHost = headersList.get('x-forwarded-host')
-    const protocol = headersList.get('x-forwarded-proto') || 'https'
-    
-    const actualHost = forwardedHost || host
-    
+    const headersList = await headers();
+    const host = headersList.get("host") || "capullo-production.up.railway.app";
+    const forwardedHost = headersList.get("x-forwarded-host");
+    const protocol = headersList.get("x-forwarded-proto") || "https";
+
+    const actualHost = forwardedHost || host;
+
     // Determine baseUrl
     let baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    
+
     if (!baseUrl || baseUrl === "") {
       // If no ENV, detect from headers but be careful with localhost in production
-      if (actualHost.includes('localhost') || actualHost.includes('127.0.0.1') || actualHost.includes('8080')) {
+      if (
+        actualHost.includes("localhost") ||
+        actualHost.includes("127.0.0.1") ||
+        actualHost.includes("8080")
+      ) {
         // If we detect 8080 or localhost but it's likely production, fallback to production URL
-        if (forwardedHost && !forwardedHost.includes('localhost')) {
-          baseUrl = `https://${forwardedHost}`
+        if (forwardedHost && !forwardedHost.includes("localhost")) {
+          baseUrl = `https://${forwardedHost}`;
         } else {
-          baseUrl = (actualHost.includes('localhost')) ? `http://${actualHost}` : `https://capullo-production.up.railway.app`
+          baseUrl = actualHost.includes("localhost")
+            ? `http://${actualHost}`
+            : `https://capullo-production.up.railway.app`;
         }
       } else {
-        baseUrl = `${protocol}://${actualHost}`
+        baseUrl = `${protocol}://${actualHost}`;
       }
     }
-    
+
     // Final safety: if we are still seeing localhost but we have a production-like host or it's not localhost
-    if (baseUrl.includes('localhost') && !actualHost.includes('localhost')) {
-      baseUrl = `https://capullo-production.up.railway.app`
+    if (baseUrl.includes("localhost") && !actualHost.includes("localhost")) {
+      baseUrl = `https://capullo-production.up.railway.app`;
     }
 
     console.log(`Using Base URL for callbacks: ${baseUrl}`);
@@ -612,57 +640,68 @@ export async function createBonumInvoice(bookingId: string) {
           remark: `${booking.customerName} - ${booking.customerPhone}`,
           image: "https://capullo.mn/logo.png",
           amount: booking.service.price,
-          count: 1
-        }
-      ]
-    }
+          count: 1,
+        },
+      ],
+    };
 
-    const checksum = generateChecksum(body)
+    const checksum = generateChecksum(body);
 
     console.log("Creating Bonum invoice...");
-    const invoiceRes = await fetch(`${BONUM_BASE_URL}/bonum-gateway/ecommerce/invoices`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        'x-checksum-v2': checksum
+    const invoiceRes = await fetch(
+      `${BONUM_BASE_URL}/bonum-gateway/ecommerce/invoices`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "x-checksum-v2": checksum,
+        },
+        body: JSON.stringify(body),
+        cache: "no-store",
       },
-      body: JSON.stringify(body),
-      cache: 'no-store'
-    })
+    );
 
     if (!invoiceRes.ok) {
-      const errorText = await invoiceRes.text()
-      console.error('Bonum Invoice creation error response:', errorText)
-      return { success: false, error: `Нэхэмжлэх үүсгэж чадсангүй (${invoiceRes.status})` };
+      const errorText = await invoiceRes.text();
+      console.error("Bonum Invoice creation error response:", errorText);
+      return {
+        success: false,
+        error: `Нэхэмжлэх үүсгэж чадсангүй (${invoiceRes.status})`,
+      };
     }
 
-    const invoiceData = await invoiceRes.json()
+    const invoiceData = await invoiceRes.json();
     // Handle both direct and nested response structure
-    const followUpLink = invoiceData.followUpLink || invoiceData.body?.followUpLink;
-    const invoiceId = invoiceData.invoiceId || invoiceData.body?.invoiceId || invoiceData.id;
+    const followUpLink =
+      invoiceData.followUpLink || invoiceData.body?.followUpLink;
+    const invoiceId =
+      invoiceData.invoiceId || invoiceData.body?.invoiceId || invoiceData.id;
 
     if (!followUpLink) {
-      console.error('Bonum response missing followUpLink:', invoiceData);
-      return { success: false, error: 'Төлбөрийн холбоос хүлээн авч чадсангүй.' };
+      console.error("Bonum response missing followUpLink:", invoiceData);
+      return {
+        success: false,
+        error: "Төлбөрийн холбоос хүлээн авч чадсангүй.",
+      };
     }
 
     // Update booking with invoice ID for tracking
     console.log(`Updating booking ${bookingId} with invoiceId: ${invoiceId}`);
     await prisma.booking.update({
       where: { id: bookingId },
-      data: { paymentId: String(invoiceId) }
-    })
+      data: { paymentId: String(invoiceId) },
+    });
 
     // Store booking ID in cookie for redirect fallback
     try {
-      const c = await cookies()
-      c.set('pendingBookingId', bookingId, { 
+      const c = await cookies();
+      c.set("pendingBookingId", bookingId, {
         maxAge: 3600, // 1 hour
         httpOnly: true,
         secure: true, // Always secure in production/Railway
-        sameSite: 'lax'
-      })
+        sameSite: "lax",
+      });
     } catch (cookieErr) {
       console.warn("Failed to set pendingBookingId cookie:", cookieErr);
     }
@@ -671,8 +710,7 @@ export async function createBonumInvoice(bookingId: string) {
     return { success: true, followUpLink };
   } catch (err) {
     const error = err as Error;
-    console.error('Unexpected error in createBonumInvoice:', error);
+    console.error("Unexpected error in createBonumInvoice:", error);
     return { success: false, error: `Системд алдаа гарлаа: ${error.message}` };
   }
 }
-

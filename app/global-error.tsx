@@ -1,14 +1,14 @@
-'use client'
+"use client";
 
-import { AlertCircle, RefreshCcw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { AlertCircle, RefreshCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function GlobalError({
-  error,
+  error: _error,
   reset,
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
   return (
     <html lang="mn">
@@ -18,13 +18,14 @@ export default function GlobalError({
             <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto">
               <AlertCircle className="w-10 h-10 text-rose-500" />
             </div>
-            
+
             <div className="space-y-4">
               <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
                 Системд ноцтой алдаа гарлаа
               </h1>
               <p className="text-dusty font-medium text-sm leading-relaxed">
-                Апп-ын ерөнхий бүтэц (Layout) ажиллахад алдаа гарлаа. Та доорх товчийг дарж системийг дахин ачаална уу.
+                Апп-ын ерөнхий бүтэц (Layout) ажиллахад алдаа гарлаа. Та доорх
+                товчийг дарж системийг дахин ачаална уу.
               </p>
             </div>
 
@@ -40,5 +41,5 @@ export default function GlobalError({
         </div>
       </body>
     </html>
-  )
+  );
 }

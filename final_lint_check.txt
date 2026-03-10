@@ -1,0 +1,13 @@
+
+> capullo@0.1.0 lint C:\Users\odgii\Desktop\capullo
+> eslint
+
+
+C:\Users\odgii\Desktop\capullo\app\api\webhook\bonum\route.ts
+  21:14  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\odgii\Desktop\capullo\app\global-error.tsx
+  7:10  warning  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+

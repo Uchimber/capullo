@@ -1,0 +1,27 @@
+
+> capullo@0.1.0 lint C:\Users\odgii\Desktop\capullo
+> eslint
+
+
+C:\Users\odgii\Desktop\capullo\app\api\webhook\bonum\route.ts
+  20:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\odgii\Desktop\capullo\app\global-error.tsx
+  7:3  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\odgii\Desktop\capullo\components\AdminBookingsClient.tsx
+  3:20  warning  'useEffect' is defined but never used  @typescript-eslint/no-unused-vars
+  8:10  warning  'Button' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\Users\odgii\Desktop\capullo\components\AdminSchedulerClient.tsx
+    3:20  warning  'useEffect' is defined but never used                   @typescript-eslint/no-unused-vars
+   15:10  warning  'Button' is defined but never used                      @typescript-eslint/no-unused-vars
+   81:59  warning  'isBookingsLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  125:9   warning  'statusMutation' is assigned a value but never used     @typescript-eslint/no-unused-vars
+
+C:\Users\odgii\Desktop\capullo\components\AdminServicesClient.tsx
+   5:55  warning  'getServices' is defined but never used         @typescript-eslint/no-unused-vars
+  26:45  warning  'isLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 10 problems (0 errors, 10 warnings)
+

@@ -1,9 +1,24 @@
-'use client'
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, Phone, Loader2, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
-import { format, addDays, startOfDay, startOfWeek, subDays, isSameDay, isBefore } from "date-fns";
+import {
+  User,
+  Phone,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+} from "lucide-react";
+import {
+  format,
+  addDays,
+  startOfDay,
+  startOfWeek,
+  subDays,
+  isSameDay,
+  isBefore,
+} from "date-fns";
 import { mn } from "date-fns/locale";
 import { getAvailableSlots } from "@/lib/actions";
 
@@ -13,8 +28,12 @@ interface Props {
 
 export default function BookingForm({ serviceId }: Props) {
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
-  const [baseDate, setBaseDate] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    startOfDay(new Date()),
+  );
+  const [baseDate, setBaseDate] = useState<Date>(
+    startOfWeek(new Date(), { weekStartsOn: 1 }),
+  );
   const [slots, setSlots] = useState<Date[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
@@ -44,17 +63,17 @@ export default function BookingForm({ serviceId }: Props) {
     try {
       const formData = new FormData(e.currentTarget);
       const name = formData.get("name") as string;
-      const phone = (formData.get("phone") as string).replace(/\s/g, '');
+      const phone = (formData.get("phone") as string).replace(/\s/g, "");
       const startTime = selectedSlot.toISOString();
 
       // Validate phone: exactly 8 digits
       if (!/^\d{8}$/.test(phone)) {
-        setError('Утасны дугаар 8 оронтой тоо байх ёстой.');
+        setError("Утасны дугаар 8 оронтой тоо байх ёстой.");
         setIsSubmitting(false);
         return;
       }
 
-      // Navigate to payment page with booking details as query params  
+      // Navigate to payment page with booking details as query params
       // NO database record is created at this point
       const params = new URLSearchParams({
         serviceId,
@@ -62,12 +81,12 @@ export default function BookingForm({ serviceId }: Props) {
         phone,
         startTime,
       });
-      
+
       router.push(`/book/payment/new?${params.toString()}`);
     } catch (err) {
       const error = err as Error;
       console.error(error);
-      setError(error.message || 'Алдаа гарлаа.');
+      setError(error.message || "Алдаа гарлаа.");
       setIsSubmitting(false);
     }
   };
@@ -86,7 +105,7 @@ export default function BookingForm({ serviceId }: Props) {
           {error}
         </div>
       )}
-      
+
       {/* Date Picker */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
@@ -95,23 +114,26 @@ export default function BookingForm({ serviceId }: Props) {
           </label>
           <div className="flex items-center gap-1 bg-blush/50 p-1 rounded-xl">
             <span className="px-3 text-xs font-bold text-dusty border-r border-border/40 capitalize">
-              {format(baseDate, "yyyy", { locale: mn })} <span className="text-mauve">{format(baseDate, "MMM", { locale: mn })}</span>
+              {format(baseDate, "yyyy", { locale: mn })}{" "}
+              <span className="text-mauve">
+                {format(baseDate, "MMM", { locale: mn })}
+              </span>
             </span>
-            <button 
+            <button
               type="button"
               onClick={() => setBaseDate(subDays(baseDate, 7))}
               className="p-1.5 hover:bg-white rounded-lg transition-colors text-dusty hover:text-mauve"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button 
+            <button
               type="button"
               onClick={goToToday}
               className="px-3 py-1 text-xs font-bold text-dusty hover:text-mauve transition-colors"
             >
               Өнөөдөр
             </button>
-            <button 
+            <button
               type="button"
               onClick={() => setBaseDate(addDays(baseDate, 7))}
               className="p-1.5 hover:bg-white rounded-lg transition-colors text-dusty hover:text-mauve"
@@ -134,14 +156,16 @@ export default function BookingForm({ serviceId }: Props) {
                 disabled={isPast}
                 onClick={() => setSelectedDate(date)}
                 className={`flex flex-col items-center justify-center py-3.5 rounded-2xl border-2 transition-all relative ${
-                  isSelected 
-                    ? "bg-mauve border-mauve text-white shadow-lg shadow-mauve/25 scale-105" 
+                  isSelected
+                    ? "bg-mauve border-mauve text-white shadow-lg shadow-mauve/25 scale-105"
                     : isPast
-                    ? "opacity-25 cursor-not-allowed border-transparent"
-                    : "bg-blush/30 border-transparent text-dusty hover:bg-white hover:border-rose-soft"
+                      ? "opacity-25 cursor-not-allowed border-transparent"
+                      : "bg-blush/30 border-transparent text-dusty hover:bg-white hover:border-rose-soft"
                 }`}
               >
-                {isToday && !isSelected && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-mauve rounded-full"></div>}
+                {isToday && !isSelected && (
+                  <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-mauve rounded-full"></div>
+                )}
                 <span className="text-[9px] uppercase font-bold tracking-wider leading-none mb-1 opacity-70">
                   {format(date, "EEE", { locale: mn })}
                 </span>
@@ -158,7 +182,9 @@ export default function BookingForm({ serviceId }: Props) {
       <div className="space-y-3">
         <label className="text-xs font-bold uppercase tracking-wider text-dusty flex items-center justify-between">
           Боломжтой цагууд
-          {loadingSlots && <Loader2 className="w-3 h-3 animate-spin text-mauve" />}
+          {loadingSlots && (
+            <Loader2 className="w-3 h-3 animate-spin text-mauve" />
+          )}
         </label>
         <div className="grid grid-cols-3 gap-2">
           {slots.map((slot) => {
@@ -169,8 +195,8 @@ export default function BookingForm({ serviceId }: Props) {
                 type="button"
                 onClick={() => setSelectedSlot(slot)}
                 className={`py-3 rounded-xl border-2 text-sm font-bold transition-all ${
-                  isSelected 
-                    ? "bg-mauve border-mauve text-white shadow-lg shadow-mauve/25 scale-95" 
+                  isSelected
+                    ? "bg-mauve border-mauve text-white shadow-lg shadow-mauve/25 scale-95"
                     : "bg-blush/30 border-transparent text-foreground hover:bg-white hover:border-rose-soft"
                 }`}
               >
@@ -241,7 +267,15 @@ export default function BookingForm({ serviceId }: Props) {
 }
 
 const ArrowRight = ({ className }: { className: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M5 12h14M12 5l7 7-7 7"/>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>
 );

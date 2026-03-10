@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   format,
   addDays,
@@ -12,7 +12,6 @@ import {
 import { mn } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import {
   getAvailableSlots,
   createBooking,
@@ -45,8 +44,8 @@ interface Booking {
   id: string;
   customerName: string;
   customerPhone: string;
-  startTime: string;
-  endTime: string;
+  startTime: Date | string;
+  endTime: Date | string;
   serviceId: string;
   status: string;
   service: { name: string };
@@ -78,14 +77,22 @@ export default function AdminSchedulerClient({
   });
 
   // Queries
-  const { data: allBookings = initialBookings, isLoading: isBookingsLoading, isFetching: isBookingsFetching, refetch: refetchBookings } = useQuery({
-    queryKey: ['admin-bookings'],
+  const {
+    data: allBookings = initialBookings,
+    isFetching: isBookingsFetching,
+    refetch: refetchBookings,
+  } = useQuery({
+    queryKey: ["admin-bookings"],
     queryFn: getAdminBookings,
     initialData: initialBookings,
   });
 
   const { data: availableSlots = [], isLoading: isSlotsLoading } = useQuery({
-    queryKey: ['available-slots', selectedDate.toISOString(), formData.serviceId],
+    queryKey: [
+      "available-slots",
+      selectedDate.toISOString(),
+      formData.serviceId,
+    ],
     queryFn: () => getAvailableSlots(selectedDate, formData.serviceId, true),
     enabled: !!formData.serviceId,
   });
@@ -94,8 +101,8 @@ export default function AdminSchedulerClient({
   const bookingMutation = useMutation({
     mutationFn: createBooking,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["available-slots"] });
       setFormData({
         ...formData,
         customerName: "",
@@ -106,44 +113,46 @@ export default function AdminSchedulerClient({
     },
     onError: (error: Error) => {
       toast.error(error.message || "Алдаа гарлаа");
-    }
+    },
   });
 
   const rescheduleMutation = useMutation({
-    mutationFn: ({ id, newStartTime }: { id: string, newStartTime: Date }) => rescheduleBooking(id, newStartTime),
+    mutationFn: ({ id, newStartTime }: { id: string; newStartTime: Date }) =>
+      rescheduleBooking(id, newStartTime),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["available-slots"] });
       setReschedulingId(null);
       toast.success("Цаг амжилттай шилжүүллээ");
     },
     onError: (error: Error) => {
       toast.error(error.message || "Алдаа гарлаа");
-    }
+    },
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string, status: string }) => updateBookingStatus(id, status),
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      updateBookingStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["available-slots"] });
       toast.success("Төлөв шинэчлэгдлээ");
     },
     onError: (error: Error) => {
       toast.error(error.message || "Алдаа гарлаа");
-    }
+    },
   });
 
   const blockMutation = useMutation({
     mutationFn: blockSlot,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["available-slots"] });
       toast.success("Цаг амжилттай блоклолоо");
     },
     onError: (error: Error) => {
       toast.error(error.message || "Алдаа гарлаа");
-    }
+    },
   });
 
   const dates = Array.from({ length: 7 }, (_, i) => addDays(baseDate, i));
@@ -171,7 +180,10 @@ export default function AdminSchedulerClient({
   const handleBlockSlot = async (slot: Date) => {
     if (!formData.serviceId) return;
 
-    const durationStr = window.prompt("Блок хийх хугацааг минутаар оруулна уу:", "60");
+    const durationStr = window.prompt(
+      "Блок хийх хугацааг минутаар оруулна уу:",
+      "60",
+    );
     if (durationStr === null) return; // User cancelled
 
     const duration = parseInt(durationStr, 10);
@@ -209,7 +221,9 @@ export default function AdminSchedulerClient({
           <div className="flex items-center gap-4 bg-white p-1.5 rounded-2xl border border-rose-soft/40 shadow-sm shadow-rose-soft/10">
             <span className="px-4 text-xs font-bold uppercase tracking-wider text-dusty border-r border-rose-soft/40">
               {format(baseDate, "yyyy", { locale: mn })}{" "}
-              <span className="text-mauve">{format(baseDate, "MMM", { locale: mn })}</span>
+              <span className="text-mauve">
+                {format(baseDate, "MMM", { locale: mn })}
+              </span>
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -238,7 +252,9 @@ export default function AdminSchedulerClient({
                 title="Мэдээллийг шинэчлэх"
                 className="p-2 mr-1 bg-mauve/10 hover:bg-mauve/20 rounded-xl transition-colors text-mauve hover:text-accent-dark outline-none disabled:opacity-50"
               >
-                <RefreshCw className={`w-5 h-5 ${isBookingsFetching ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-5 h-5 ${isBookingsFetching ? "animate-spin" : ""}`}
+                />
               </button>
             </div>
           </div>
@@ -304,7 +320,9 @@ export default function AdminSchedulerClient({
                     <div
                       key={booking.id}
                       className={`group relative bg-white rounded-4xl border p-7 hover:shadow-xl hover:-translate-y-0.5 transition-all border-l-8 ${
-                        booking.status === 'BLOCKED' ? 'border-foreground border-l-foreground' : 'border-rose-soft/40 border-l-mauve'
+                        booking.status === "BLOCKED"
+                          ? "border-foreground border-l-foreground"
+                          : "border-rose-soft/40 border-l-mauve"
                       }`}
                     >
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -312,8 +330,10 @@ export default function AdminSchedulerClient({
                           <div className="flex items-center gap-4">
                             <span className="text-sm font-extrabold text-foreground tracking-tight flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5 text-mauve" />
-                              {format(new Date(booking.startTime), "HH:mm")} -{" "}
-                              {format(new Date(booking.endTime), "HH:mm")}
+                              {format(
+                                new Date(booking.startTime),
+                                "HH:mm",
+                              )} - {format(new Date(booking.endTime), "HH:mm")}
                             </span>
                             <span
                               className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
@@ -331,19 +351,20 @@ export default function AdminSchedulerClient({
                                   : "Хүлээгдэж буй"}
                             </span>
                           </div>
-                          
+
                           <h3 className="text-xl font-extrabold text-foreground tracking-tight flex items-center gap-2">
-                             <User className="w-4 h-4 text-mauve/40" />
+                            <User className="w-4 h-4 text-mauve/40" />
                             {booking.customerName}
                           </h3>
 
                           <div className="flex items-center gap-4 text-xs font-medium text-dusty">
-                             <div className="flex items-center gap-1.5 bg-blush/30 px-3 py-1.5 rounded-xl border border-rose-soft/30">
-                               <Phone className="w-3.5 h-3.5 text-mauve" /> {booking.customerPhone}
-                             </div>
-                             <span className="opacity-60 font-bold uppercase tracking-widest text-[10px] flex items-center gap-1.5">
-                               {booking.service.name}
-                             </span>
+                            <div className="flex items-center gap-1.5 bg-blush/30 px-3 py-1.5 rounded-xl border border-rose-soft/30">
+                              <Phone className="w-3.5 h-3.5 text-mauve" />{" "}
+                              {booking.customerPhone}
+                            </div>
+                            <span className="opacity-60 font-bold uppercase tracking-widest text-[10px] flex items-center gap-1.5">
+                              {booking.service.name}
+                            </span>
                           </div>
                         </div>
 
@@ -362,20 +383,31 @@ export default function AdminSchedulerClient({
                           >
                             <RefreshCw className="w-5 h-5" />
                           </button>
-                          
-                          {booking.status !== "PAID" && booking.status !== "BLOCKED" && (
-                            <button
-                              onClick={() => updateBookingStatus(booking.id, "PAID")}
-                              className="p-3 bg-white text-dusty hover:text-white hover:bg-emerald-500 rounded-xl border border-rose-soft/40 hover:border-emerald-500 hover:shadow-lg shadow-sm transition-all"
-                              title="Баталгаажуулах"
-                            >
-                              <CheckCircle2 className="w-5 h-5" />
-                            </button>
-                          )}
+
+                          {booking.status !== "PAID" &&
+                            booking.status !== "BLOCKED" && (
+                              <button
+                                onClick={() =>
+                                  statusMutation.mutate({
+                                    id: booking.id,
+                                    status: "PAID",
+                                  })
+                                }
+                                className="p-3 bg-white text-dusty hover:text-white hover:bg-emerald-500 rounded-xl border border-rose-soft/40 hover:border-emerald-500 hover:shadow-lg shadow-sm transition-all"
+                                title="Баталгаажуулах"
+                              >
+                                <CheckCircle2 className="w-5 h-5" />
+                              </button>
+                            )}
 
                           {booking.status === "BLOCKED" && (
                             <button
-                              onClick={() => updateBookingStatus(booking.id, "CANCELLED")}
+                              onClick={() =>
+                                statusMutation.mutate({
+                                  id: booking.id,
+                                  status: "CANCELLED",
+                                })
+                              }
                               className="p-3 bg-white text-dusty hover:text-white hover:bg-rose-500 rounded-xl border border-rose-soft/40 hover:border-rose-500 hover:shadow-lg shadow-sm transition-all"
                               title="Блок гаргах"
                             >
@@ -400,16 +432,24 @@ export default function AdminSchedulerClient({
               <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform duration-500">
                 <Clock className="w-16 h-16 text-mauve" />
               </div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-dusty/60 mb-2">Сул цагууд</p>
-              <p className="text-3xl font-extrabold text-mauve tracking-tight leading-none">{availableSlots.length}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-dusty/60 mb-2">
+                Сул цагууд
+              </p>
+              <p className="text-3xl font-extrabold text-mauve tracking-tight leading-none">
+                {availableSlots.length}
+              </p>
             </div>
-            
+
             <div className="p-6 bg-foreground rounded-4xl border border-foreground shadow-lg shadow-foreground/10 group overflow-hidden relative">
               <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
                 <CalendarIcon className="w-16 h-16 text-white" />
               </div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Захиалга</p>
-              <p className="text-3xl font-extrabold text-white tracking-tight leading-none">{currentDayBookings.length}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">
+                Захиалга
+              </p>
+              <p className="text-3xl font-extrabold text-white tracking-tight leading-none">
+                {currentDayBookings.length}
+              </p>
             </div>
           </div>
 
@@ -459,7 +499,8 @@ export default function AdminSchedulerClient({
           {!reschedulingId && (
             <div className="bg-white p-10 rounded-[2.5rem] border border-rose-soft/40 shadow-xl shadow-rose-soft/10 space-y-8 sticky top-24 z-10">
               <h3 className="text-xl font-extrabold text-foreground tracking-tight flex items-center gap-3">
-                <Plus className="w-5 h-5 text-mauve" /> Шууд <span className="text-mauve">захиалах</span>
+                <Plus className="w-5 h-5 text-mauve" /> Шууд{" "}
+                <span className="text-mauve">захиалах</span>
               </h3>
 
               <form onSubmit={handleManualBooking} className="space-y-6">
@@ -493,7 +534,10 @@ export default function AdminSchedulerClient({
                       placeholder="Нэр"
                       value={formData.customerName}
                       onChange={(e) =>
-                        setFormData({ ...formData, customerName: e.target.value })
+                        setFormData({
+                          ...formData,
+                          customerName: e.target.value,
+                        })
                       }
                       className="w-full bg-blush/20 border-2 border-transparent focus:border-mauve focus:bg-white pl-11 pr-5 py-4 rounded-2xl text-sm font-bold transition-all outline-none text-foreground placeholder:text-dusty/40"
                     />
@@ -511,7 +555,10 @@ export default function AdminSchedulerClient({
                       placeholder="Утас"
                       value={formData.customerPhone}
                       onChange={(e) =>
-                        setFormData({ ...formData, customerPhone: e.target.value })
+                        setFormData({
+                          ...formData,
+                          customerPhone: e.target.value,
+                        })
                       }
                       className="w-full bg-blush/20 border-2 border-transparent focus:border-mauve focus:bg-white pl-11 pr-5 py-4 rounded-2xl text-sm font-bold transition-all outline-none text-foreground placeholder:text-dusty/40"
                     />
@@ -521,7 +568,9 @@ export default function AdminSchedulerClient({
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-dusty ml-1 flex justify-between items-center">
                     <span>Сул цагууд</span>
-                    <span className="text-mauve/60">{format(selectedDate, "dd", { locale: mn })}-нд</span>
+                    <span className="text-mauve/60">
+                      {format(selectedDate, "dd", { locale: mn })}-нд
+                    </span>
                   </label>
                   <div className="grid grid-cols-2 gap-2.5 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
                     {isSlotsLoading ? (
