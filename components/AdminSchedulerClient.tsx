@@ -97,6 +97,8 @@ export default function AdminSchedulerClient({
     queryKey: ["admin-bookings"],
     queryFn: getAdminBookings,
     initialData: initialBookings,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: availableSlots = [], isLoading: isSlotsLoading } = useQuery({
@@ -107,12 +109,25 @@ export default function AdminSchedulerClient({
     ],
     queryFn: () => getAvailableSlots(selectedDate, formData.serviceId, true),
     enabled: !!formData.serviceId,
+    staleTime: 0,
   });
 
   // Mutations
   const bookingMutation = useMutation({
     mutationFn: createBooking,
-    onSuccess: () => {
+    onSuccess: (newBooking) => {
+      // Optimistic: add new booking to cache immediately
+      queryClient.setQueryData(
+        ["admin-bookings"],
+        (old: Booking[] | undefined) => {
+          if (!old) return old;
+          const merged = [...old, newBooking].sort(
+            (a, b) =>
+              new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+          );
+          return merged;
+        },
+      );
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["available-slots"] });
       setFormData({
@@ -263,7 +278,10 @@ export default function AdminSchedulerClient({
             </div>
             <div className="border-l border-rose-soft/40 pl-2">
               <button
-                onClick={() => refetchBookings()}
+                onClick={() => {
+                  refetchBookings();
+                  queryClient.invalidateQueries({ queryKey: ["available-slots"] });
+                }}
                 disabled={isBookingsFetching}
                 title="Мэдээллийг шинэчлэх"
                 className="p-2 mr-1 bg-mauve/10 hover:bg-mauve/20 rounded-xl transition-colors text-mauve hover:text-accent-dark outline-none disabled:opacity-50"
@@ -368,7 +386,7 @@ export default function AdminSchedulerClient({
                                   ? "Баталгаажсан"
                                 : booking.status === "BLOCKED"
                                   ? "Завгүй"
-                                  : "Хүлээгдэж буй"}
+                                  : "Баталгаажсан"}
                             </span>
                           </div>
 

@@ -46,6 +46,8 @@ export default function AdminServicesClient({ initialServices }: Props) {
     queryKey: ["services"],
     queryFn: () => getServices(),
     initialData: initialServices,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const createMutation = useMutation({
@@ -224,7 +226,8 @@ export default function AdminServicesClient({ initialServices }: Props) {
               </div>
               <button
                 onClick={() => refetch()}
-                className="p-2 bg-white border border-rose-soft/40 rounded-xl text-dusty hover:text-mauve hover:border-mauve transition-all"
+                disabled={isFetching}
+                className="p-2 bg-white border border-rose-soft/40 rounded-xl text-dusty hover:text-mauve hover:border-mauve transition-all disabled:opacity-50"
               >
                 <RefreshCw
                   className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`}

@@ -7,9 +7,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        // With SSR, we usually want to set some default staleTime
-        // above 0 to avoid refetching immediately on the client
-        staleTime: 60 * 1000,
+        // staleTime: 0 = data always stale, refetch on invalidate/mount
+        // More reliable for admin (no stale cache issues)
+        staleTime: 0,
+        refetchOnMount: "always",
       },
     },
   }))

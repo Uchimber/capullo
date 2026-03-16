@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { getBookings, updateBookingStatus } from "@/lib/actions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { BookingStatusValue } from "@/lib/booking-status";
 import {
   Check,
   X,
@@ -27,20 +26,15 @@ interface Booking {
   customerPhone: string;
   startTime: string;
   endTime: string;
-  status: BookingStatusValue;
+  status: string;
   serviceId: string;
   paymentId: string | null;
   createdAt: string;
   service: { name: string; price: number };
 }
 
-const STATUS_TABS: Array<{
-  key: BookingStatusValue | "ALL";
-  label: string;
-  color: string;
-}> = [
+const STATUS_TABS = [
   { key: "PAID", label: "Төлөгдсөн", color: "emerald" },
-  { key: "PENDING", label: "Хүлээгдэж", color: "peach" },
   { key: "CONFIRMED", label: "Баталгаажсан", color: "mauve" },
   { key: "CANCELLED", label: "Цуцлагдсан", color: "rose" },
   { key: "BLOCKED", label: "Завгүй", color: "gray" },
@@ -49,9 +43,7 @@ const STATUS_TABS: Array<{
 
 export default function AdminBookingsClient() {
   const queryClient = useQueryClient();
-  const [activeStatus, setActiveStatus] = useState<BookingStatusValue | "ALL">(
-    "PAID",
-  );
+  const [activeStatus, setActiveStatus] = useState("CONFIRMED");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
@@ -65,6 +57,8 @@ export default function AdminBookingsClient() {
         search,
         limit: 15,
       }),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const bookings = data?.bookings || [];
@@ -77,7 +71,7 @@ export default function AdminBookingsClient() {
       newStatus,
     }: {
       bookingId: string;
-      newStatus: BookingStatusValue;
+      newStatus: string;
     }) => updateBookingStatus(bookingId, newStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
@@ -88,10 +82,7 @@ export default function AdminBookingsClient() {
     },
   });
 
-  const handleStatusChange = async (
-    bookingId: string,
-    newStatus: BookingStatusValue,
-  ) => {
+  const handleStatusChange = async (bookingId: string, newStatus: string) => {
     statusMutation.mutate({ bookingId, newStatus });
   };
 
@@ -108,20 +99,15 @@ export default function AdminBookingsClient() {
         text: "text-emerald-600",
         label: "Төлөгдсөн",
       },
-      PENDING: {
+      CONFIRMED: {
         bg: "bg-peach/30 border-mauve/20",
         text: "text-mauve",
-        label: "Хүлээгдэж буй",
+        label: "Баталгаажсан",
       },
       CANCELLED: {
         bg: "bg-rose-50 border-rose-100",
         text: "text-rose-500",
         label: "Цуцлагдсан",
-      },
-      CONFIRMED: {
-        bg: "bg-blue-50 border-blue-100",
-        text: "text-blue-600",
-        label: "Баталгаажсан",
       },
       BLOCKED: {
         bg: "bg-foreground border-foreground",
@@ -129,7 +115,7 @@ export default function AdminBookingsClient() {
         label: "Завгүй",
       },
     };
-    const s = map[status] || map.PENDING;
+    const s = map[status] || map.CONFIRMED;
     return (
       <span
         className={`px-4 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest border shadow-sm ${s.bg} ${s.text}`}

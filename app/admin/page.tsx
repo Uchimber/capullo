@@ -10,10 +10,10 @@ export default async function AdminDashboard() {
   const [servicesCount, bookingsCount, bookings] = await Promise.all([
     prisma.service.count(),
     prisma.booking.count({
-      where: { status: { in: ["PAID", "CONFIRMED", "BLOCKED"] } },
+      where: { status: { in: ["CONFIRMED", "PAID", "BLOCKED"] } },
     }),
     prisma.booking.findMany({
-      where: { status: { in: ["PAID", "CONFIRMED", "BLOCKED"] } },
+      where: { status: { in: ["CONFIRMED", "PAID"] } },
       take: 5,
       orderBy: { createdAt: "desc" },
       include: { service: true },
@@ -111,7 +111,7 @@ export default async function AdminDashboard() {
                 <span className={`px-5 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest border shadow-sm ${
                   booking.status === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-peach/30 text-mauve border-mauve/20'
                 }`}>
-                  {booking.status === 'PAID' ? 'Төлөгдсөн' : 'Хүлээгдэж буй'}
+                  {booking.status === 'PAID' ? 'Төлөгдсөн' : 'Баталгаажсан'}
                 </span>
               </div>
             </div>

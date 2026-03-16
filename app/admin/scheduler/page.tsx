@@ -9,7 +9,7 @@ export default async function AdminSchedulerPage() {
       orderBy: { name: "asc" },
     }),
     prisma.booking.findMany({
-      where: { status: { not: "PENDING" } },
+      where: { status: { in: ["CONFIRMED", "PAID", "BLOCKED"] } },
       include: { service: true },
       orderBy: { startTime: "asc" },
     }),
