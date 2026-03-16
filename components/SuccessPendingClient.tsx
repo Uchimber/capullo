@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { Loader2, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function SuccessPendingClient({
   paymentSessionId,
@@ -10,11 +11,9 @@ export default function SuccessPendingClient({
   paymentSessionId: string;
 }) {
   const router = useRouter();
-  const [attempts, setAttempts] = useState(0);
 
   useEffect(() => {
     const checkInterval = setInterval(async () => {
-      setAttempts((a) => a + 1);
       try {
         const res = await fetch(
           `/api/booking/check?ps=${encodeURIComponent(paymentSessionId)}`,
@@ -38,15 +37,22 @@ export default function SuccessPendingClient({
           <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
         </div>
         <h2 className="text-2xl font-extrabold text-foreground mb-3">
-          Төлбөр баталгаажлага хийгдэж байна
+          Төлбөр баталгаажуулалт хийгдэж байна
         </h2>
         <p className="text-dusty text-sm font-medium mb-6">
-          Таны төлбөр амжилттай хүлээн авсан. Захиалгаа баталгаажуулж байна.
+          Захиалгаа баталгаажуулж байна.
           Хэдхэн секунд хүлээнэ үү.
         </p>
-        <p className="text-xs text-dusty/60">
+        <p className="text-xs text-dusty/60 mb-8">
           Хуудас автоматаар шинэчлэгдэнэ
         </p>
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-rose-soft/40 bg-blush/20 text-foreground font-bold text-sm hover:bg-blush/40 hover:border-mauve/40 transition-colors"
+        >
+          <Home className="w-4 h-4" />
+          Нүүр хуудас руу буцах
+        </Link>
       </div>
     </div>
   );
