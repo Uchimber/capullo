@@ -36,6 +36,31 @@ export default async function SuccessPage({
     return notFound();
   }
 
+  if (booking.status === "CANCELLED") {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center p-6 md:p-8">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-rose-soft/20 border border-border/50 p-12 text-center space-y-6">
+          <h2 className="text-2xl font-extrabold text-foreground">Төлбөр амжилтгүй боллоо</h2>
+          <p className="text-sm text-dusty">
+            Төлбөр амжилтгүй болсон тул захиалга бүртгэгдсэнгүй. Та дахин захиалах боломжтой.
+          </p>
+          <Link
+            href={`/book/${booking.service.id}`} // if not available, fallback to home or service page
+            className="inline-block mt-4 w-full bg-mauve text-white py-3 rounded-xl font-bold text-sm"
+          >
+            Цагыг дахин сонгох
+          </Link>
+          <Link
+            href="/"
+            className="inline-block mt-2 w-full bg-foreground text-white py-3 rounded-xl font-bold text-sm"
+          >
+            Нүүр хуудас руу буцах
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   // While webhook has not yet set PAID, show waiting state and poll.
   if (booking.status !== "PAID") {
     return <SuccessWaiting bookingId={bookingId} />;

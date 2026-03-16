@@ -40,6 +40,7 @@ const STATUS_TABS: Array<{
   color: string;
 }> = [
   { key: "PAID", label: "Төлөгдсөн", color: "emerald" },
+  { key: "PENDING", label: "Хүлээгдэж", color: "peach" },
   { key: "CONFIRMED", label: "Баталгаажсан", color: "mauve" },
   { key: "CANCELLED", label: "Цуцлагдсан", color: "rose" },
   { key: "BLOCKED", label: "Завгүй", color: "gray" },

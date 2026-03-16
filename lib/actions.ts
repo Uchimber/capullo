@@ -115,8 +115,8 @@ export async function getBookings(params: {
 
   if (params.status && params.status !== "ALL") {
     where.status = params.status;
-  } else {
-    // Hide unpaid pending records from booking management views.
+  } else if (!params.status) {
+    // Default admin view: hide pending unless explicitly requesting ALL or PENDING.
     where.status = { not: "PENDING" };
   }
 
@@ -165,9 +165,18 @@ export async function createBooking(data: {
   serviceId: string;
   customerName: string;
   customerPhone: string;
-  startTime: Date;
+  startTime: string | Date;
 }) {
-  const validated = BookingSchema.parse(data);
+  const typedStartTime =
+    typeof data.startTime === "string" ? new Date(data.startTime) : data.startTime;
+  if (!(typedStartTime instanceof Date) || isNaN(typedStartTime.getTime())) {
+    throw new Error("Буруу эхлэх цаг байна");
+  }
+
+  const validated = BookingSchema.parse({
+    ...data,
+    startTime: typedStartTime,
+  });
 
   const booking = await prisma.$transaction(async (tx) => {
     await lockBookingWriteScope(tx, validated.serviceId);
@@ -253,8 +262,10 @@ export async function createBookingAndPay(data: {
             { status: { in: ["PAID", "CONFIRMED", "BLOCKED"] } },
             {
               status: "PENDING",
-              paymentId: { not: null },
-              createdAt: { gte: activeWindow },
+              OR: [
+                { paymentId: { not: null } },
+                { createdAt: { gte: activeWindow } },
+              ],
             },
           ],
         },
@@ -310,7 +321,7 @@ export async function createBookingAndPay(data: {
 
 export async function blockSlot(data: {
   serviceId: string;
-  startTime: Date;
+  startTime: string | Date;
   duration?: number;
 }) {
   await checkAdmin();
@@ -319,8 +330,20 @@ export async function blockSlot(data: {
   });
   if (!service) throw new Error("Үйлчилгээ олдсонгүй");
 
-  const startTime = new Date(data.startTime);
+  const startTime =
+    typeof data.startTime === "string"
+      ? new Date(data.startTime)
+      : data.startTime;
+
+  if (!(startTime instanceof Date) || isNaN(startTime.getTime())) {
+    throw new Error("Буруу эхлэх цаг байна");
+  }
+
   const blockDuration = data.duration || service.duration;
+  if (blockDuration <= 0) {
+    throw new Error("Блокийн хугацаа үнэмшилгүй байна");
+  }
+
   const endTime = new Date(startTime.getTime() + blockDuration * 60000);
 
   // Use the same overlap check logic
@@ -368,8 +391,18 @@ export async function updateBookingStatus(id: string, status: string) {
   revalidatePath("/admin");
 }
 
-export async function rescheduleBooking(id: string, newStartTime: Date) {
+export async function rescheduleBooking(
+  id: string,
+  newStartTime: string | Date,
+) {
   await checkAdmin();
+  const parsedStartTime =
+    typeof newStartTime === "string" ? new Date(newStartTime) : newStartTime;
+
+  if (!(parsedStartTime instanceof Date) || isNaN(parsedStartTime.getTime())) {
+    throw new Error("Зөв бус цаг сонгогдсон байна");
+  }
+
   const booking = await prisma.booking.findUnique({
     where: { id },
     include: { service: true },
@@ -377,7 +410,7 @@ export async function rescheduleBooking(id: string, newStartTime: Date) {
 
   if (!booking) throw new Error("Захиалга олдсонгүй");
   const endTime = new Date(
-    newStartTime.getTime() + booking.service.duration * 60000,
+    parsedStartTime.getTime() + booking.service.duration * 60000,
   );
 
   // Overlap check for rescheduling too
@@ -388,7 +421,7 @@ export async function rescheduleBooking(id: string, newStartTime: Date) {
       OR: [
         {
           startTime: { lt: endTime },
-          endTime: { gt: newStartTime },
+          endTime: { gt: parsedStartTime },
         },
       ],
     },
@@ -401,7 +434,7 @@ export async function rescheduleBooking(id: string, newStartTime: Date) {
   await prisma.booking.update({
     where: { id },
     data: {
-      startTime: newStartTime,
+      startTime: parsedStartTime,
       endTime: endTime,
     },
   });
@@ -486,8 +519,10 @@ export async function getAvailableSlots(
         { status: "BLOCKED" },
         {
           status: "PENDING",
-          paymentId: { not: null }, // Only block if they actually clicked "Pay" (and thus generated an invoice)
-          createdAt: { gte: activeWindow },
+          OR: [
+            { paymentId: { not: null } },
+            { createdAt: { gte: activeWindow } },
+          ],
         },
       ],
     },
@@ -565,6 +600,8 @@ export async function getBusinessSettings() {
 }
 
 // BONUM PAYMENT INTEGRATION
+// API баримт: https://documenter.getpostman.com/view/6164222/2sB2cYbzu8#ed5dd085-090d-42c3-8d13-e0208d56c015
+// Нэхэмжлэх үүсгэх: amount, callback, redirectUri/redirectUrl/returnUrl, transactionId, expiresIn, items[]; checksum: x-checksum-v2 (HMAC-SHA256 of JSON body).
 const BONUM_TERMINAL_ID = process.env.BONUM_TERMINAL_ID || "17172267";
 const BONUM_SECRET_KEY = process.env.BONUM_SECRET_KEY;
 const BONUM_BASE_URL = "https://apis.bonum.mn";

@@ -210,7 +210,7 @@ export default function AdminSchedulerClient({
 
     blockMutation.mutate({
       serviceId: formData.serviceId,
-      startTime: blockTargetSlot,
+      startTime: blockTargetSlot.toISOString(),
       duration,
     });
   };
