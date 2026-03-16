@@ -99,6 +99,8 @@ export async function POST(req: Request) {
             data: { status: "PAID" },
           });
           revalidatePath("/admin/bookings");
+          revalidatePath("/admin/scheduler");
+          revalidatePath(`/book/success/${bookingByPaymentId.id}`);
           return NextResponse.json({
             success: true,
             from: "paymentId_fallback",
@@ -114,6 +116,7 @@ export async function POST(req: Request) {
 
       if (booking.status === "PAID") {
         console.log(`Booking ${idToSearch} is already PAID.`);
+        revalidatePath(`/book/success/${idToSearch}`);
         return NextResponse.json({ success: true, message: "Already paid" });
       }
 
@@ -132,6 +135,7 @@ export async function POST(req: Request) {
       revalidatePath("/admin/bookings");
       revalidatePath("/admin/scheduler");
       revalidatePath("/");
+      revalidatePath(`/book/success/${idToSearch}`);
     } else {
       console.warn(
         `⚠️ Bonum Webhook: Success conditions not met. isSuccess=${isSuccess}, transId=${transactionId}`,

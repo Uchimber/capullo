@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { getBookingStatusForSuccess } from "@/lib/actions";
 
 export default function SuccessWaiting({ bookingId }: { bookingId: string }) {
   const router = useRouter();
-  const [message, setMessage] = useState("Төлбөр баталгаажуулагдаж байна...");
+  const [message, setMessage] = useState("Төлбөр баталгаажуулж байна...");
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,12 +20,12 @@ export default function SuccessWaiting({ bookingId }: { bookingId: string }) {
         router.refresh();
         return;
       }
-      setTimeout(poll, 2000);
+      timeoutRef.current = setTimeout(poll, 1500);
     };
-    const t = setTimeout(poll, 2000);
+    timeoutRef.current = setTimeout(poll, 0);
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [bookingId, router]);
 

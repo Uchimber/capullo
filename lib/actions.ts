@@ -25,6 +25,8 @@ async function checkAdmin() {
 
 // Public: for success page to poll until payment is confirmed (no admin)
 export async function getBookingStatusForSuccess(bookingId: string) {
+  const { unstable_noStore } = await import("next/cache");
+  unstable_noStore();
   const b = await prisma.booking.findUnique({
     where: { id: bookingId },
     select: { status: true },

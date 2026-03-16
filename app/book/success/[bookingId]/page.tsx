@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 import { format } from "date-fns";
 import { mn } from "date-fns/locale";
 import { CheckCircle2, Calendar, Receipt, ArrowRight } from "lucide-react";
