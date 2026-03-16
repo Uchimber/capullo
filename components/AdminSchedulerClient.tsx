@@ -225,7 +225,7 @@ export default function AdminSchedulerClient({
 
     blockMutation.mutate({
       serviceId: formData.serviceId,
-      startTime: blockTargetSlot.toISOString(),
+      startTime: blockTargetSlot,
       duration,
     });
   };

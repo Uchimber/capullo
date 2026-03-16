@@ -3,7 +3,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -30,24 +29,11 @@ model Booking {
   customerPhone   String
   startTime       DateTime
   endTime         DateTime
-  status          BookingStatus @default(PENDING)
+  status          String      @default("PENDING") // PENDING, PAID, CONFIRMED, CANCELLED, BLOCKED
   paymentId       String?
   createdAt       DateTime    @default(now())
 
   @@index([startTime])
-}
-
-// Bonum webhook only sends transactionId + invoiceId; we need to store booking details
-// when creating invoice so webhook can create the booking.
-model PendingTransaction {
-  transactionId   String   @id
-  serviceId       String
-  customerName    String
-  customerPhone   String
-  startTime       DateTime
-  createdAt       DateTime @default(now())
-
-  @@index([createdAt])
 }
 
 model WorkingHours {
@@ -76,12 +62,4 @@ model BusinessSettings {
   phone     String   @default("98118008")
   address   String   @default("СБД 1-р хороо, 5-р хороолол 14251, Чингисийн өргөн чөлөө. \"Бизнес плаза\" төв. 302 тоот өрөө.")
   updatedAt DateTime @updatedAt
-}
-
-enum BookingStatus {
-  PENDING
-  PAID
-  CONFIRMED
-  CANCELLED
-  BLOCKED
 }

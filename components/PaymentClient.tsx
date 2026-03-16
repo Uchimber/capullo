@@ -49,8 +49,8 @@ export default function PaymentClient({ booking, pendingBookingData }: Props) {
         }
       } else {
         // LEGACY FLOW: Booking already exists (e.g. from admin)
-        const { createBonumInvoiceForExistingBooking } = await import("@/lib/actions");
-        const result = await createBonumInvoiceForExistingBooking(booking.id);
+        const { createBonumInvoice } = await import("@/lib/actions");
+        const result = await createBonumInvoice(booking.id);
         
         if (result.success && result.followUpLink) {
           window.location.href = result.followUpLink;

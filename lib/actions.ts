@@ -22,6 +22,23 @@ async function checkAdmin() {
   }
 }
 
+// Public: for success page to poll until payment is confirmed (no admin)
+export async function getBookingStatusForSuccess(idOrPaymentId: string) {
+  const { unstable_noStore } = await import("next/cache");
+  unstable_noStore();
+  const b = await prisma.booking.findFirst({
+    where: {
+      OR: [{ id: idOrPaymentId }, { paymentId: idOrPaymentId }],
+    },
+    select: { status: true, id: true },
+  });
+  if (b?.status === "PAID") {
+    revalidatePath(`/book/success/${idOrPaymentId}`);
+    revalidatePath(`/book/success/${b.id}`);
+  }
+  return b ? { status: b.status, id: b.id } : null;
+}
+
 // SERVICES
 export async function createService(formData: FormData) {
   await checkAdmin();
