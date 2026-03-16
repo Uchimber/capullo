@@ -24,6 +24,11 @@ export type Service = $Result.DefaultSelection<Prisma.$ServicePayload>
  */
 export type Booking = $Result.DefaultSelection<Prisma.$BookingPayload>
 /**
+ * Model PendingTransaction
+ * 
+ */
+export type PendingTransaction = $Result.DefaultSelection<Prisma.$PendingTransactionPayload>
+/**
  * Model WorkingHours
  * 
  */
@@ -194,6 +199,16 @@ export class PrismaClient<
     * ```
     */
   get booking(): Prisma.BookingDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.pendingTransaction`: Exposes CRUD operations for the **PendingTransaction** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PendingTransactions
+    * const pendingTransactions = await prisma.pendingTransaction.findMany()
+    * ```
+    */
+  get pendingTransaction(): Prisma.PendingTransactionDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.workingHours`: Exposes CRUD operations for the **WorkingHours** model.
@@ -650,6 +665,7 @@ export namespace Prisma {
   export const ModelName: {
     Service: 'Service',
     Booking: 'Booking',
+    PendingTransaction: 'PendingTransaction',
     WorkingHours: 'WorkingHours',
     BusinessSettings: 'BusinessSettings'
   };
@@ -667,7 +683,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "service" | "booking" | "workingHours" | "businessSettings"
+      modelProps: "service" | "booking" | "pendingTransaction" | "workingHours" | "businessSettings"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -816,6 +832,80 @@ export namespace Prisma {
           count: {
             args: Prisma.BookingCountArgs<ExtArgs>
             result: $Utils.Optional<BookingCountAggregateOutputType> | number
+          }
+        }
+      }
+      PendingTransaction: {
+        payload: Prisma.$PendingTransactionPayload<ExtArgs>
+        fields: Prisma.PendingTransactionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PendingTransactionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PendingTransactionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload>
+          }
+          findFirst: {
+            args: Prisma.PendingTransactionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PendingTransactionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload>
+          }
+          findMany: {
+            args: Prisma.PendingTransactionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload>[]
+          }
+          create: {
+            args: Prisma.PendingTransactionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload>
+          }
+          createMany: {
+            args: Prisma.PendingTransactionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PendingTransactionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload>[]
+          }
+          delete: {
+            args: Prisma.PendingTransactionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload>
+          }
+          update: {
+            args: Prisma.PendingTransactionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload>
+          }
+          deleteMany: {
+            args: Prisma.PendingTransactionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PendingTransactionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.PendingTransactionUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload>[]
+          }
+          upsert: {
+            args: Prisma.PendingTransactionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PendingTransactionPayload>
+          }
+          aggregate: {
+            args: Prisma.PendingTransactionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePendingTransaction>
+          }
+          groupBy: {
+            args: Prisma.PendingTransactionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PendingTransactionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PendingTransactionCountArgs<ExtArgs>
+            result: $Utils.Optional<PendingTransactionCountAggregateOutputType> | number
           }
         }
       }
@@ -1077,6 +1167,7 @@ export namespace Prisma {
   export type GlobalOmitConfig = {
     service?: ServiceOmit
     booking?: BookingOmit
+    pendingTransaction?: PendingTransactionOmit
     workingHours?: WorkingHoursOmit
     businessSettings?: BusinessSettingsOmit
   }
@@ -3434,6 +3525,1014 @@ export namespace Prisma {
 
 
   /**
+   * Model PendingTransaction
+   */
+
+  export type AggregatePendingTransaction = {
+    _count: PendingTransactionCountAggregateOutputType | null
+    _min: PendingTransactionMinAggregateOutputType | null
+    _max: PendingTransactionMaxAggregateOutputType | null
+  }
+
+  export type PendingTransactionMinAggregateOutputType = {
+    transactionId: string | null
+    serviceId: string | null
+    customerName: string | null
+    customerPhone: string | null
+    startTime: Date | null
+    createdAt: Date | null
+  }
+
+  export type PendingTransactionMaxAggregateOutputType = {
+    transactionId: string | null
+    serviceId: string | null
+    customerName: string | null
+    customerPhone: string | null
+    startTime: Date | null
+    createdAt: Date | null
+  }
+
+  export type PendingTransactionCountAggregateOutputType = {
+    transactionId: number
+    serviceId: number
+    customerName: number
+    customerPhone: number
+    startTime: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type PendingTransactionMinAggregateInputType = {
+    transactionId?: true
+    serviceId?: true
+    customerName?: true
+    customerPhone?: true
+    startTime?: true
+    createdAt?: true
+  }
+
+  export type PendingTransactionMaxAggregateInputType = {
+    transactionId?: true
+    serviceId?: true
+    customerName?: true
+    customerPhone?: true
+    startTime?: true
+    createdAt?: true
+  }
+
+  export type PendingTransactionCountAggregateInputType = {
+    transactionId?: true
+    serviceId?: true
+    customerName?: true
+    customerPhone?: true
+    startTime?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type PendingTransactionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PendingTransaction to aggregate.
+     */
+    where?: PendingTransactionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PendingTransactions to fetch.
+     */
+    orderBy?: PendingTransactionOrderByWithRelationInput | PendingTransactionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PendingTransactionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PendingTransactions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PendingTransactions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PendingTransactions
+    **/
+    _count?: true | PendingTransactionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PendingTransactionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PendingTransactionMaxAggregateInputType
+  }
+
+  export type GetPendingTransactionAggregateType<T extends PendingTransactionAggregateArgs> = {
+        [P in keyof T & keyof AggregatePendingTransaction]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePendingTransaction[P]>
+      : GetScalarType<T[P], AggregatePendingTransaction[P]>
+  }
+
+
+
+
+  export type PendingTransactionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PendingTransactionWhereInput
+    orderBy?: PendingTransactionOrderByWithAggregationInput | PendingTransactionOrderByWithAggregationInput[]
+    by: PendingTransactionScalarFieldEnum[] | PendingTransactionScalarFieldEnum
+    having?: PendingTransactionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PendingTransactionCountAggregateInputType | true
+    _min?: PendingTransactionMinAggregateInputType
+    _max?: PendingTransactionMaxAggregateInputType
+  }
+
+  export type PendingTransactionGroupByOutputType = {
+    transactionId: string
+    serviceId: string
+    customerName: string
+    customerPhone: string
+    startTime: Date
+    createdAt: Date
+    _count: PendingTransactionCountAggregateOutputType | null
+    _min: PendingTransactionMinAggregateOutputType | null
+    _max: PendingTransactionMaxAggregateOutputType | null
+  }
+
+  type GetPendingTransactionGroupByPayload<T extends PendingTransactionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PendingTransactionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PendingTransactionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PendingTransactionGroupByOutputType[P]>
+            : GetScalarType<T[P], PendingTransactionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PendingTransactionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    transactionId?: boolean
+    serviceId?: boolean
+    customerName?: boolean
+    customerPhone?: boolean
+    startTime?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["pendingTransaction"]>
+
+  export type PendingTransactionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    transactionId?: boolean
+    serviceId?: boolean
+    customerName?: boolean
+    customerPhone?: boolean
+    startTime?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["pendingTransaction"]>
+
+  export type PendingTransactionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    transactionId?: boolean
+    serviceId?: boolean
+    customerName?: boolean
+    customerPhone?: boolean
+    startTime?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["pendingTransaction"]>
+
+  export type PendingTransactionSelectScalar = {
+    transactionId?: boolean
+    serviceId?: boolean
+    customerName?: boolean
+    customerPhone?: boolean
+    startTime?: boolean
+    createdAt?: boolean
+  }
+
+  export type PendingTransactionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"transactionId" | "serviceId" | "customerName" | "customerPhone" | "startTime" | "createdAt", ExtArgs["result"]["pendingTransaction"]>
+
+  export type $PendingTransactionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PendingTransaction"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      transactionId: string
+      serviceId: string
+      customerName: string
+      customerPhone: string
+      startTime: Date
+      createdAt: Date
+    }, ExtArgs["result"]["pendingTransaction"]>
+    composites: {}
+  }
+
+  type PendingTransactionGetPayload<S extends boolean | null | undefined | PendingTransactionDefaultArgs> = $Result.GetResult<Prisma.$PendingTransactionPayload, S>
+
+  type PendingTransactionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PendingTransactionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PendingTransactionCountAggregateInputType | true
+    }
+
+  export interface PendingTransactionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PendingTransaction'], meta: { name: 'PendingTransaction' } }
+    /**
+     * Find zero or one PendingTransaction that matches the filter.
+     * @param {PendingTransactionFindUniqueArgs} args - Arguments to find a PendingTransaction
+     * @example
+     * // Get one PendingTransaction
+     * const pendingTransaction = await prisma.pendingTransaction.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PendingTransactionFindUniqueArgs>(args: SelectSubset<T, PendingTransactionFindUniqueArgs<ExtArgs>>): Prisma__PendingTransactionClient<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PendingTransaction that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PendingTransactionFindUniqueOrThrowArgs} args - Arguments to find a PendingTransaction
+     * @example
+     * // Get one PendingTransaction
+     * const pendingTransaction = await prisma.pendingTransaction.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PendingTransactionFindUniqueOrThrowArgs>(args: SelectSubset<T, PendingTransactionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PendingTransactionClient<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PendingTransaction that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PendingTransactionFindFirstArgs} args - Arguments to find a PendingTransaction
+     * @example
+     * // Get one PendingTransaction
+     * const pendingTransaction = await prisma.pendingTransaction.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PendingTransactionFindFirstArgs>(args?: SelectSubset<T, PendingTransactionFindFirstArgs<ExtArgs>>): Prisma__PendingTransactionClient<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PendingTransaction that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PendingTransactionFindFirstOrThrowArgs} args - Arguments to find a PendingTransaction
+     * @example
+     * // Get one PendingTransaction
+     * const pendingTransaction = await prisma.pendingTransaction.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PendingTransactionFindFirstOrThrowArgs>(args?: SelectSubset<T, PendingTransactionFindFirstOrThrowArgs<ExtArgs>>): Prisma__PendingTransactionClient<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PendingTransactions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PendingTransactionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PendingTransactions
+     * const pendingTransactions = await prisma.pendingTransaction.findMany()
+     * 
+     * // Get first 10 PendingTransactions
+     * const pendingTransactions = await prisma.pendingTransaction.findMany({ take: 10 })
+     * 
+     * // Only select the `transactionId`
+     * const pendingTransactionWithTransactionIdOnly = await prisma.pendingTransaction.findMany({ select: { transactionId: true } })
+     * 
+     */
+    findMany<T extends PendingTransactionFindManyArgs>(args?: SelectSubset<T, PendingTransactionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PendingTransaction.
+     * @param {PendingTransactionCreateArgs} args - Arguments to create a PendingTransaction.
+     * @example
+     * // Create one PendingTransaction
+     * const PendingTransaction = await prisma.pendingTransaction.create({
+     *   data: {
+     *     // ... data to create a PendingTransaction
+     *   }
+     * })
+     * 
+     */
+    create<T extends PendingTransactionCreateArgs>(args: SelectSubset<T, PendingTransactionCreateArgs<ExtArgs>>): Prisma__PendingTransactionClient<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PendingTransactions.
+     * @param {PendingTransactionCreateManyArgs} args - Arguments to create many PendingTransactions.
+     * @example
+     * // Create many PendingTransactions
+     * const pendingTransaction = await prisma.pendingTransaction.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PendingTransactionCreateManyArgs>(args?: SelectSubset<T, PendingTransactionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PendingTransactions and returns the data saved in the database.
+     * @param {PendingTransactionCreateManyAndReturnArgs} args - Arguments to create many PendingTransactions.
+     * @example
+     * // Create many PendingTransactions
+     * const pendingTransaction = await prisma.pendingTransaction.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PendingTransactions and only return the `transactionId`
+     * const pendingTransactionWithTransactionIdOnly = await prisma.pendingTransaction.createManyAndReturn({
+     *   select: { transactionId: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PendingTransactionCreateManyAndReturnArgs>(args?: SelectSubset<T, PendingTransactionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a PendingTransaction.
+     * @param {PendingTransactionDeleteArgs} args - Arguments to delete one PendingTransaction.
+     * @example
+     * // Delete one PendingTransaction
+     * const PendingTransaction = await prisma.pendingTransaction.delete({
+     *   where: {
+     *     // ... filter to delete one PendingTransaction
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PendingTransactionDeleteArgs>(args: SelectSubset<T, PendingTransactionDeleteArgs<ExtArgs>>): Prisma__PendingTransactionClient<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PendingTransaction.
+     * @param {PendingTransactionUpdateArgs} args - Arguments to update one PendingTransaction.
+     * @example
+     * // Update one PendingTransaction
+     * const pendingTransaction = await prisma.pendingTransaction.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PendingTransactionUpdateArgs>(args: SelectSubset<T, PendingTransactionUpdateArgs<ExtArgs>>): Prisma__PendingTransactionClient<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PendingTransactions.
+     * @param {PendingTransactionDeleteManyArgs} args - Arguments to filter PendingTransactions to delete.
+     * @example
+     * // Delete a few PendingTransactions
+     * const { count } = await prisma.pendingTransaction.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PendingTransactionDeleteManyArgs>(args?: SelectSubset<T, PendingTransactionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PendingTransactions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PendingTransactionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PendingTransactions
+     * const pendingTransaction = await prisma.pendingTransaction.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PendingTransactionUpdateManyArgs>(args: SelectSubset<T, PendingTransactionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PendingTransactions and returns the data updated in the database.
+     * @param {PendingTransactionUpdateManyAndReturnArgs} args - Arguments to update many PendingTransactions.
+     * @example
+     * // Update many PendingTransactions
+     * const pendingTransaction = await prisma.pendingTransaction.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more PendingTransactions and only return the `transactionId`
+     * const pendingTransactionWithTransactionIdOnly = await prisma.pendingTransaction.updateManyAndReturn({
+     *   select: { transactionId: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends PendingTransactionUpdateManyAndReturnArgs>(args: SelectSubset<T, PendingTransactionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one PendingTransaction.
+     * @param {PendingTransactionUpsertArgs} args - Arguments to update or create a PendingTransaction.
+     * @example
+     * // Update or create a PendingTransaction
+     * const pendingTransaction = await prisma.pendingTransaction.upsert({
+     *   create: {
+     *     // ... data to create a PendingTransaction
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PendingTransaction we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PendingTransactionUpsertArgs>(args: SelectSubset<T, PendingTransactionUpsertArgs<ExtArgs>>): Prisma__PendingTransactionClient<$Result.GetResult<Prisma.$PendingTransactionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PendingTransactions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PendingTransactionCountArgs} args - Arguments to filter PendingTransactions to count.
+     * @example
+     * // Count the number of PendingTransactions
+     * const count = await prisma.pendingTransaction.count({
+     *   where: {
+     *     // ... the filter for the PendingTransactions we want to count
+     *   }
+     * })
+    **/
+    count<T extends PendingTransactionCountArgs>(
+      args?: Subset<T, PendingTransactionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PendingTransactionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PendingTransaction.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PendingTransactionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PendingTransactionAggregateArgs>(args: Subset<T, PendingTransactionAggregateArgs>): Prisma.PrismaPromise<GetPendingTransactionAggregateType<T>>
+
+    /**
+     * Group by PendingTransaction.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PendingTransactionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PendingTransactionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PendingTransactionGroupByArgs['orderBy'] }
+        : { orderBy?: PendingTransactionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PendingTransactionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPendingTransactionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PendingTransaction model
+   */
+  readonly fields: PendingTransactionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PendingTransaction.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PendingTransactionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PendingTransaction model
+   */
+  interface PendingTransactionFieldRefs {
+    readonly transactionId: FieldRef<"PendingTransaction", 'String'>
+    readonly serviceId: FieldRef<"PendingTransaction", 'String'>
+    readonly customerName: FieldRef<"PendingTransaction", 'String'>
+    readonly customerPhone: FieldRef<"PendingTransaction", 'String'>
+    readonly startTime: FieldRef<"PendingTransaction", 'DateTime'>
+    readonly createdAt: FieldRef<"PendingTransaction", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PendingTransaction findUnique
+   */
+  export type PendingTransactionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * Filter, which PendingTransaction to fetch.
+     */
+    where: PendingTransactionWhereUniqueInput
+  }
+
+  /**
+   * PendingTransaction findUniqueOrThrow
+   */
+  export type PendingTransactionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * Filter, which PendingTransaction to fetch.
+     */
+    where: PendingTransactionWhereUniqueInput
+  }
+
+  /**
+   * PendingTransaction findFirst
+   */
+  export type PendingTransactionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * Filter, which PendingTransaction to fetch.
+     */
+    where?: PendingTransactionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PendingTransactions to fetch.
+     */
+    orderBy?: PendingTransactionOrderByWithRelationInput | PendingTransactionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PendingTransactions.
+     */
+    cursor?: PendingTransactionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PendingTransactions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PendingTransactions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PendingTransactions.
+     */
+    distinct?: PendingTransactionScalarFieldEnum | PendingTransactionScalarFieldEnum[]
+  }
+
+  /**
+   * PendingTransaction findFirstOrThrow
+   */
+  export type PendingTransactionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * Filter, which PendingTransaction to fetch.
+     */
+    where?: PendingTransactionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PendingTransactions to fetch.
+     */
+    orderBy?: PendingTransactionOrderByWithRelationInput | PendingTransactionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PendingTransactions.
+     */
+    cursor?: PendingTransactionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PendingTransactions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PendingTransactions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PendingTransactions.
+     */
+    distinct?: PendingTransactionScalarFieldEnum | PendingTransactionScalarFieldEnum[]
+  }
+
+  /**
+   * PendingTransaction findMany
+   */
+  export type PendingTransactionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * Filter, which PendingTransactions to fetch.
+     */
+    where?: PendingTransactionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PendingTransactions to fetch.
+     */
+    orderBy?: PendingTransactionOrderByWithRelationInput | PendingTransactionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PendingTransactions.
+     */
+    cursor?: PendingTransactionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PendingTransactions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PendingTransactions.
+     */
+    skip?: number
+    distinct?: PendingTransactionScalarFieldEnum | PendingTransactionScalarFieldEnum[]
+  }
+
+  /**
+   * PendingTransaction create
+   */
+  export type PendingTransactionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * The data needed to create a PendingTransaction.
+     */
+    data: XOR<PendingTransactionCreateInput, PendingTransactionUncheckedCreateInput>
+  }
+
+  /**
+   * PendingTransaction createMany
+   */
+  export type PendingTransactionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PendingTransactions.
+     */
+    data: PendingTransactionCreateManyInput | PendingTransactionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PendingTransaction createManyAndReturn
+   */
+  export type PendingTransactionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * The data used to create many PendingTransactions.
+     */
+    data: PendingTransactionCreateManyInput | PendingTransactionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PendingTransaction update
+   */
+  export type PendingTransactionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * The data needed to update a PendingTransaction.
+     */
+    data: XOR<PendingTransactionUpdateInput, PendingTransactionUncheckedUpdateInput>
+    /**
+     * Choose, which PendingTransaction to update.
+     */
+    where: PendingTransactionWhereUniqueInput
+  }
+
+  /**
+   * PendingTransaction updateMany
+   */
+  export type PendingTransactionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PendingTransactions.
+     */
+    data: XOR<PendingTransactionUpdateManyMutationInput, PendingTransactionUncheckedUpdateManyInput>
+    /**
+     * Filter which PendingTransactions to update
+     */
+    where?: PendingTransactionWhereInput
+    /**
+     * Limit how many PendingTransactions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PendingTransaction updateManyAndReturn
+   */
+  export type PendingTransactionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * The data used to update PendingTransactions.
+     */
+    data: XOR<PendingTransactionUpdateManyMutationInput, PendingTransactionUncheckedUpdateManyInput>
+    /**
+     * Filter which PendingTransactions to update
+     */
+    where?: PendingTransactionWhereInput
+    /**
+     * Limit how many PendingTransactions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PendingTransaction upsert
+   */
+  export type PendingTransactionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * The filter to search for the PendingTransaction to update in case it exists.
+     */
+    where: PendingTransactionWhereUniqueInput
+    /**
+     * In case the PendingTransaction found by the `where` argument doesn't exist, create a new PendingTransaction with this data.
+     */
+    create: XOR<PendingTransactionCreateInput, PendingTransactionUncheckedCreateInput>
+    /**
+     * In case the PendingTransaction was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PendingTransactionUpdateInput, PendingTransactionUncheckedUpdateInput>
+  }
+
+  /**
+   * PendingTransaction delete
+   */
+  export type PendingTransactionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+    /**
+     * Filter which PendingTransaction to delete.
+     */
+    where: PendingTransactionWhereUniqueInput
+  }
+
+  /**
+   * PendingTransaction deleteMany
+   */
+  export type PendingTransactionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PendingTransactions to delete
+     */
+    where?: PendingTransactionWhereInput
+    /**
+     * Limit how many PendingTransactions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PendingTransaction without action
+   */
+  export type PendingTransactionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PendingTransaction
+     */
+    select?: PendingTransactionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PendingTransaction
+     */
+    omit?: PendingTransactionOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Model WorkingHours
    */
 
@@ -5499,6 +6598,18 @@ export namespace Prisma {
   export type BookingScalarFieldEnum = (typeof BookingScalarFieldEnum)[keyof typeof BookingScalarFieldEnum]
 
 
+  export const PendingTransactionScalarFieldEnum: {
+    transactionId: 'transactionId',
+    serviceId: 'serviceId',
+    customerName: 'customerName',
+    customerPhone: 'customerPhone',
+    startTime: 'startTime',
+    createdAt: 'createdAt'
+  };
+
+  export type PendingTransactionScalarFieldEnum = (typeof PendingTransactionScalarFieldEnum)[keyof typeof PendingTransactionScalarFieldEnum]
+
+
   export const WorkingHoursScalarFieldEnum: {
     id: 'id',
     dayOfWeek: 'dayOfWeek',
@@ -5772,6 +6883,63 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"Booking"> | Date | string
   }
 
+  export type PendingTransactionWhereInput = {
+    AND?: PendingTransactionWhereInput | PendingTransactionWhereInput[]
+    OR?: PendingTransactionWhereInput[]
+    NOT?: PendingTransactionWhereInput | PendingTransactionWhereInput[]
+    transactionId?: StringFilter<"PendingTransaction"> | string
+    serviceId?: StringFilter<"PendingTransaction"> | string
+    customerName?: StringFilter<"PendingTransaction"> | string
+    customerPhone?: StringFilter<"PendingTransaction"> | string
+    startTime?: DateTimeFilter<"PendingTransaction"> | Date | string
+    createdAt?: DateTimeFilter<"PendingTransaction"> | Date | string
+  }
+
+  export type PendingTransactionOrderByWithRelationInput = {
+    transactionId?: SortOrder
+    serviceId?: SortOrder
+    customerName?: SortOrder
+    customerPhone?: SortOrder
+    startTime?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PendingTransactionWhereUniqueInput = Prisma.AtLeast<{
+    transactionId?: string
+    AND?: PendingTransactionWhereInput | PendingTransactionWhereInput[]
+    OR?: PendingTransactionWhereInput[]
+    NOT?: PendingTransactionWhereInput | PendingTransactionWhereInput[]
+    serviceId?: StringFilter<"PendingTransaction"> | string
+    customerName?: StringFilter<"PendingTransaction"> | string
+    customerPhone?: StringFilter<"PendingTransaction"> | string
+    startTime?: DateTimeFilter<"PendingTransaction"> | Date | string
+    createdAt?: DateTimeFilter<"PendingTransaction"> | Date | string
+  }, "transactionId">
+
+  export type PendingTransactionOrderByWithAggregationInput = {
+    transactionId?: SortOrder
+    serviceId?: SortOrder
+    customerName?: SortOrder
+    customerPhone?: SortOrder
+    startTime?: SortOrder
+    createdAt?: SortOrder
+    _count?: PendingTransactionCountOrderByAggregateInput
+    _max?: PendingTransactionMaxOrderByAggregateInput
+    _min?: PendingTransactionMinOrderByAggregateInput
+  }
+
+  export type PendingTransactionScalarWhereWithAggregatesInput = {
+    AND?: PendingTransactionScalarWhereWithAggregatesInput | PendingTransactionScalarWhereWithAggregatesInput[]
+    OR?: PendingTransactionScalarWhereWithAggregatesInput[]
+    NOT?: PendingTransactionScalarWhereWithAggregatesInput | PendingTransactionScalarWhereWithAggregatesInput[]
+    transactionId?: StringWithAggregatesFilter<"PendingTransaction"> | string
+    serviceId?: StringWithAggregatesFilter<"PendingTransaction"> | string
+    customerName?: StringWithAggregatesFilter<"PendingTransaction"> | string
+    customerPhone?: StringWithAggregatesFilter<"PendingTransaction"> | string
+    startTime?: DateTimeWithAggregatesFilter<"PendingTransaction"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"PendingTransaction"> | Date | string
+  }
+
   export type WorkingHoursWhereInput = {
     AND?: WorkingHoursWhereInput | WorkingHoursWhereInput[]
     OR?: WorkingHoursWhereInput[]
@@ -6032,6 +7200,69 @@ export namespace Prisma {
     endTime?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     paymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PendingTransactionCreateInput = {
+    transactionId: string
+    serviceId: string
+    customerName: string
+    customerPhone: string
+    startTime: Date | string
+    createdAt?: Date | string
+  }
+
+  export type PendingTransactionUncheckedCreateInput = {
+    transactionId: string
+    serviceId: string
+    customerName: string
+    customerPhone: string
+    startTime: Date | string
+    createdAt?: Date | string
+  }
+
+  export type PendingTransactionUpdateInput = {
+    transactionId?: StringFieldUpdateOperationsInput | string
+    serviceId?: StringFieldUpdateOperationsInput | string
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    startTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PendingTransactionUncheckedUpdateInput = {
+    transactionId?: StringFieldUpdateOperationsInput | string
+    serviceId?: StringFieldUpdateOperationsInput | string
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    startTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PendingTransactionCreateManyInput = {
+    transactionId: string
+    serviceId: string
+    customerName: string
+    customerPhone: string
+    startTime: Date | string
+    createdAt?: Date | string
+  }
+
+  export type PendingTransactionUpdateManyMutationInput = {
+    transactionId?: StringFieldUpdateOperationsInput | string
+    serviceId?: StringFieldUpdateOperationsInput | string
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    startTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PendingTransactionUncheckedUpdateManyInput = {
+    transactionId?: StringFieldUpdateOperationsInput | string
+    serviceId?: StringFieldUpdateOperationsInput | string
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    startTime?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -6403,6 +7634,33 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumBookingStatusFilter<$PrismaModel>
     _max?: NestedEnumBookingStatusFilter<$PrismaModel>
+  }
+
+  export type PendingTransactionCountOrderByAggregateInput = {
+    transactionId?: SortOrder
+    serviceId?: SortOrder
+    customerName?: SortOrder
+    customerPhone?: SortOrder
+    startTime?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PendingTransactionMaxOrderByAggregateInput = {
+    transactionId?: SortOrder
+    serviceId?: SortOrder
+    customerName?: SortOrder
+    customerPhone?: SortOrder
+    startTime?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PendingTransactionMinOrderByAggregateInput = {
+    transactionId?: SortOrder
+    serviceId?: SortOrder
+    customerName?: SortOrder
+    customerPhone?: SortOrder
+    startTime?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type BoolFilter<$PrismaModel = never> = {

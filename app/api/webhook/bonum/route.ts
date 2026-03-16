@@ -50,14 +50,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid checksum" }, { status: 401 });
     }
 
+    // Bonum webhook body: { type: "PAYMENT", status: "SUCCESS"|"FAILED", body: { invoiceId, transactionId } }
     const topStatus = (body.status ?? body.result ?? "").toString().toUpperCase();
-    const bodyStatus = (body.body?.status ?? body.payment_status ?? "").toString().toUpperCase();
+    const bodyStatus = (body.body?.status ?? body.payment_status ?? body.body?.payment_status ?? "").toString().toUpperCase();
 
     const url = new URL(req.url);
-    const transactionId = url.searchParams.get("transactionId") || body.transactionId || body.body?.transactionId;
+    // body.transactionId = our transactionId (passed when creating invoice)
+    const transactionId =
+      body.body?.transactionId ??
+      body.transactionId ??
+      url.searchParams.get("transactionId") ??
+      body.body?.transaction_id ??
+      body.transaction_id ??
+      body.body?.invoiceId ??
+      body.invoiceId ??
+      body.body?.orderId ??
+      body.orderId;
 
     const successStatusSet = ["SUCCESS", "PAID", "COMPLETED", "0", "1", "DONE"];
     const isSuccess = successStatusSet.includes(topStatus) || successStatusSet.includes(bodyStatus);
+
+    if (!transactionId && isSuccess) {
+      console.warn("Bonum Webhook: success but no transactionId. Body:", JSON.stringify(body).slice(0, 500));
+    }
 
     if (isSuccess && transactionId) {
       console.log(`Processing successful payment for transactionId: ${transactionId}`);
@@ -75,36 +90,68 @@ export async function POST(req: Request) {
           });
         }
       } else {
-        const serviceId = url.searchParams.get("serviceId");
-        const customerName = url.searchParams.get("customerName");
-        const customerPhone = url.searchParams.get("customerPhone");
-        const startTimeStr = url.searchParams.get("startTime");
-
-        if (!serviceId || !customerName || !customerPhone || !startTimeStr) {
-          console.error("Missing booking details in webhook URL query params");
-          return NextResponse.json({ error: "Missing booking details" }, { status: 400 });
-        }
-
-        const service = await prisma.service.findUnique({ where: { id: serviceId } });
-        if (!service) {
-          return NextResponse.json({ error: "Service not found" }, { status: 404 });
-        }
-
-        const startTime = new Date(startTimeStr);
-        const endTime = new Date(startTime.getTime() + service.duration * 60000);
-
-        booking = await prisma.booking.create({
-          data: {
-            serviceId,
-            customerName,
-            customerPhone,
-            startTime,
-            endTime,
-            status: "PAID",
-            paymentId: transactionId,
-          },
+        // Bonum only sends body.transactionId + body.invoiceId; no serviceId etc.
+        // Look up PendingTransaction (saved when we created the invoice).
+        const pending = await prisma.pendingTransaction.findUnique({
+          where: { transactionId },
         });
-        console.log(`✅ Created new PAID booking: ${booking.id}`);
+
+        if (pending) {
+          const service = await prisma.service.findUnique({ where: { id: pending.serviceId } });
+          if (!service) {
+            console.error(`Service not found: ${pending.serviceId}`);
+            return NextResponse.json({ error: "Service not found" }, { status: 404 });
+          }
+
+          const startTime = new Date(pending.startTime);
+          const endTime = new Date(startTime.getTime() + service.duration * 60000);
+
+          booking = await prisma.booking.create({
+            data: {
+              serviceId: pending.serviceId,
+              customerName: pending.customerName,
+              customerPhone: pending.customerPhone,
+              startTime,
+              endTime,
+              status: "PAID",
+              paymentId: transactionId,
+            },
+          });
+          await prisma.pendingTransaction.delete({ where: { transactionId } });
+          console.log(`✅ Created new PAID booking: ${booking.id}`);
+        } else {
+          // Fallback: URL params (if Bonum used our callback URL with params)
+          const serviceId = url.searchParams.get("serviceId") || body.serviceId || body.body?.serviceId;
+          const customerName = url.searchParams.get("customerName") || body.customerName || body.body?.customerName;
+          const customerPhone = url.searchParams.get("customerPhone") || body.customerPhone || body.body?.customerPhone;
+          const startTimeStr = url.searchParams.get("startTime") || body.startTime || body.body?.startTime || body.paidAt || body.body?.paidAt;
+
+          if (!serviceId || !customerName || !customerPhone || !startTimeStr) {
+            console.error("Missing booking details. No PendingTransaction and no URL/body params. Body:", JSON.stringify(body).slice(0, 500));
+            return NextResponse.json({ error: "Missing booking details" }, { status: 400 });
+          }
+
+          const service = await prisma.service.findUnique({ where: { id: serviceId } });
+          if (!service) {
+            return NextResponse.json({ error: "Service not found" }, { status: 404 });
+          }
+
+          const startTime = new Date(startTimeStr);
+          const endTime = new Date(startTime.getTime() + service.duration * 60000);
+
+          booking = await prisma.booking.create({
+            data: {
+              serviceId,
+              customerName,
+              customerPhone,
+              startTime,
+              endTime,
+              status: "PAID",
+              paymentId: transactionId,
+            },
+          });
+          console.log(`✅ Created new PAID booking (from URL params): ${booking.id}`);
+        }
       }
 
       revalidatePath("/admin/bookings");

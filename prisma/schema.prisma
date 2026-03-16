@@ -36,6 +36,19 @@ model Booking {
   @@index([startTime])
 }
 
+// Bonum webhook only sends transactionId + invoiceId; we need to store booking details
+// when creating invoice so webhook can create the booking.
+model PendingTransaction {
+  transactionId   String   @id
+  serviceId       String
+  customerName    String
+  customerPhone   String
+  startTime       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model WorkingHours {
   id        String   @id @default(cuid())
   dayOfWeek Int      // 0-6 (Sunday-Saturday)

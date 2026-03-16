@@ -692,7 +692,26 @@ export async function createBonumInvoice(data: {
 
     console.log(`Using Base URL for callbacks: ${baseUrl}`);
 
-    // Encode details into callback URL so webhook can create the record.
+    // Bonum webhook only sends body.transactionId + body.invoiceId (no serviceId, etc).
+    // Merchant dashboard URL is used, so no query params. Store pending data for webhook lookup.
+    await prisma.pendingTransaction.upsert({
+      where: { transactionId: data.transactionId },
+      create: {
+        transactionId: data.transactionId,
+        serviceId: data.serviceId,
+        customerName: data.customerName,
+        customerPhone: data.customerPhone,
+        startTime: data.startTime,
+      },
+      update: {
+        serviceId: data.serviceId,
+        customerName: data.customerName,
+        customerPhone: data.customerPhone,
+        startTime: data.startTime,
+      },
+    });
+
+    // Encode details into callback URL (Bonum may use merchant dashboard URL instead)
     const callbackUrl = new URL(`${baseUrl}/api/webhook/bonum`);
     callbackUrl.searchParams.set("transactionId", data.transactionId);
     callbackUrl.searchParams.set("serviceId", data.serviceId);

@@ -142,6 +142,15 @@ exports.Prisma.BookingScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.PendingTransactionScalarFieldEnum = {
+  transactionId: 'transactionId',
+  serviceId: 'serviceId',
+  customerName: 'customerName',
+  customerPhone: 'customerPhone',
+  startTime: 'startTime',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.WorkingHoursScalarFieldEnum = {
   id: 'id',
   dayOfWeek: 'dayOfWeek',
@@ -183,6 +192,7 @@ exports.BookingStatus = exports.$Enums.BookingStatus = {
 exports.Prisma.ModelName = {
   Service: 'Service',
   Booking: 'Booking',
+  PendingTransaction: 'PendingTransaction',
   WorkingHours: 'WorkingHours',
   BusinessSettings: 'BusinessSettings'
 };
