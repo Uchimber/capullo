@@ -198,50 +198,70 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const c = await cookies();
-  const pendingIdFromCookie = c.get("pendingBookingId")?.value;
+  const pendingBookingId = c.get("pendingBookingId")?.value;
+  const pendingPaymentId = c.get("pendingPaymentId")?.value;
 
-  const transactionId =
+  // paymentSessionId = PendingPayment id (new flow: booking created on webhook)
+  const paymentSessionId =
+    searchParams.get("paymentSessionId") || pendingPaymentId;
+
+  // bookingId, transactionId = booking id (legacy flow)
+  const bookingOrTransactionId =
     searchParams.get("bookingId") ||
     searchParams.get("transactionId") ||
     searchParams.get("id") ||
     searchParams.get("order_id") ||
     searchParams.get("orderId") ||
     searchParams.get("invoiceId") ||
-    pendingIdFromCookie;
+    pendingBookingId;
 
-  if (transactionId) {
-    // If we used the cookie, we can clear it now
+  const headersList = await headers();
+  const host =
+    headersList.get("x-forwarded-host") ||
+    headersList.get("host") ||
+    "capullo-production.up.railway.app";
+  const protocol = headersList.get("x-forwarded-proto") || "https";
+  const baseUrl = `${protocol}://${host}`;
+
+  const fixRedirectUrl = (url: URL) => {
+    if (
+      url.hostname.includes("localhost") &&
+      !host.includes("localhost")
+    ) {
+      url.host = "capullo-production.up.railway.app";
+      url.protocol = "https:";
+    }
+  };
+
+  // New flow: Bonum redirects to callback with ?paymentSessionId=xxx
+  if (paymentSessionId) {
+    if (pendingPaymentId === paymentSessionId) {
+      c.delete("pendingPaymentId");
+    }
+    const redirectUrl = new URL(`/book/success?ps=${paymentSessionId}`, baseUrl);
+    fixRedirectUrl(redirectUrl);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Legacy flow: bookingId or transactionId
+  if (bookingOrTransactionId) {
     if (
       !searchParams.get("bookingId") &&
-      pendingIdFromCookie === transactionId
+      pendingBookingId === bookingOrTransactionId
     ) {
       c.delete("pendingBookingId");
     }
-    const headersList = await headers();
-    const host =
-      headersList.get("x-forwarded-host") ||
-      headersList.get("host") ||
-      "capullo-production.up.railway.app";
-    const protocol = headersList.get("x-forwarded-proto") || "https";
-    const baseUrl = `${protocol}://${host}`;
-
-    const redirectUrl = new URL(`/book/success/${transactionId}`, baseUrl);
-
-    // Safety check for localhost in production
-    if (
-      redirectUrl.hostname.includes("localhost") &&
-      !host.includes("localhost")
-    ) {
-      redirectUrl.host = "capullo-production.up.railway.app";
-      redirectUrl.protocol = "https:";
-    }
-
+    const redirectUrl = new URL(
+      `/book/success/${bookingOrTransactionId}`,
+      baseUrl,
+    );
+    fixRedirectUrl(redirectUrl);
     return NextResponse.redirect(redirectUrl);
   }
 
   return NextResponse.json({
     message: "Bonum Webhook is active. Use POST for actual payment data.",
     receivedParams: Object.fromEntries(searchParams.entries()),
-    hasCookie: !!pendingIdFromCookie,
+    hasCookie: !!pendingBookingId || !!pendingPaymentId,
   });
 }

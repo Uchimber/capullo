@@ -45,10 +45,20 @@ export default function BookingForm({ serviceId }: Props) {
   useEffect(() => {
     async function fetchSlots() {
       setLoadingSlots(true);
-      const data = await getAvailableSlots(selectedDate, serviceId);
-      setSlots(data);
-      setLoadingSlots(false);
-      setSelectedSlot(null);
+      try {
+        const data = await getAvailableSlots(selectedDate, serviceId);
+        // Server action returns serialized dates (ISO strings) - convert to Date
+        const dates = (data || []).map((s: Date | string) =>
+          s instanceof Date ? s : new Date(s as string),
+        );
+        setSlots(dates);
+      } catch (err) {
+        console.error("fetchSlots error:", err);
+        setSlots([]);
+      } finally {
+        setLoadingSlots(false);
+        setSelectedSlot(null);
+      }
     }
     fetchSlots();
   }, [selectedDate, serviceId]);

@@ -4,6 +4,8 @@ import { Clock, ArrowLeft, Sparkles } from "lucide-react";
 import Link from "next/link";
 import BookingForm from "@/components/BookingForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function BookingPage({
   params,
 }: {
