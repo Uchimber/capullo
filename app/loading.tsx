@@ -19,7 +19,7 @@ export default function Loading() {
       <div className="text-center space-y-4">
         <h2 className="text-5xl font-black text-foreground tracking-tight italic">Capullo</h2>
         <p className="text-dusty font-extrabold text-sm tracking-[0.3em] uppercase opacity-70 flex items-center justify-center gap-4">
-           Удахгүй <span className="w-1.5 h-1.5 bg-mauve rounded-full animate-ping motion-reduce:animate-none" /> нээгдэнэ
+           Уншиж <span className="w-1.5 h-1.5 bg-mauve rounded-full animate-ping motion-reduce:animate-none" /> байна...
         </p>
       </div>
     </div>

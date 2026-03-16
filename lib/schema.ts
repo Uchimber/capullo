@@ -8,7 +8,7 @@ export const ServiceSchema = z.object({
 });
 
 export const BookingSchema = z.object({
-  serviceId: z.string().uuid("Үйлчилгээ сонгоно уу"),
+  serviceId: z.string().cuid("Үйлчилгээ сонгоно уу"),
   customerName: z.string().min(2, "Нэр дор хаяж 2 тэмдэгт байх ёстой"),
   customerPhone: z.string().regex(/^\d{8}$/, "Утасны дугаар 8 оронтой тоо байх ёстой"),
   startTime: z.coerce.date(),
