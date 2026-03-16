@@ -414,7 +414,7 @@ export default function AdminSchedulerClient({
                                   })
                                 }
                                 className="p-3 bg-white text-dusty hover:text-white hover:bg-emerald-500 rounded-xl border border-rose-soft/40 hover:border-emerald-500 hover:shadow-lg shadow-sm transition-all"
-                                title="Баталгаажуулах"
+                                title="Төлөгдсөн"
                               >
                                 <CheckCircle2 className="w-5 h-5" />
                               </button>

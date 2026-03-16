@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { mn } from "date-fns/locale";
 import { CheckCircle2, Calendar, Receipt, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import SuccessWaiting from "./SuccessWaiting";
 
 export default async function SuccessPage({
   params,
@@ -33,9 +34,9 @@ export default async function SuccessPage({
     return notFound();
   }
 
-  // Prevent showing "success" page for unpaid/cancelled bookings.
+  // While webhook has not yet set PAID, show waiting state and poll.
   if (booking.status !== "PAID") {
-    return notFound();
+    return <SuccessWaiting bookingId={bookingId} />;
   }
 
   return (

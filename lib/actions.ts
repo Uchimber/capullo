@@ -23,6 +23,15 @@ async function checkAdmin() {
   }
 }
 
+// Public: for success page to poll until payment is confirmed (no admin)
+export async function getBookingStatusForSuccess(bookingId: string) {
+  const b = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    select: { status: true },
+  });
+  return b ? { status: b.status } : null;
+}
+
 async function lockBookingWriteScope(
   tx: Prisma.TransactionClient,
   serviceId: string,
