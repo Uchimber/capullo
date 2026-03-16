@@ -78,11 +78,9 @@ export async function POST(req: Request) {
       .toUpperCase();
 
     // Retrieve callback query param fallback from createBonumInvoice callback URL
-    const callbackParams = new URL(req.url).searchParams;
-    const callbackBookingId = callbackParams.get("bookingId");
+    const callbackBookingId = new URL(req.url).searchParams.get("bookingId");
 
     // Transaction/order ID we sent; Bonum may echo it under different keys
-    const callbackBookingId = new URL(req.url).searchParams.get("bookingId");
     const candidateIds = [
       callbackBookingId,
       body.transactionId,
