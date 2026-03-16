@@ -24,14 +24,16 @@ async function checkAdmin() {
 }
 
 // Public: for success page to poll until payment is confirmed (no admin)
-export async function getBookingStatusForSuccess(bookingId: string) {
+export async function getBookingStatusForSuccess(idOrPaymentId: string) {
   const { unstable_noStore } = await import("next/cache");
   unstable_noStore();
-  const b = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    select: { status: true },
+  const b = await prisma.booking.findFirst({
+    where: {
+      OR: [{ id: idOrPaymentId }, { paymentId: idOrPaymentId }],
+    },
+    select: { status: true, id: true },
   });
-  return b ? { status: b.status } : null;
+  return b ? { status: b.status, id: b.id } : null;
 }
 
 async function lockBookingWriteScope(
@@ -115,8 +117,9 @@ export async function getBookings(params: {
 
   if (params.status && params.status !== "ALL") {
     where.status = params.status;
-  } else if (!params.status) {
-    // Default admin view: hide pending unless explicitly requesting ALL or PENDING.
+  } else {
+    // Default admin view: ALWAYS hide pending unless explicitly requesting ALL or PENDING.
+    // User request: pending tolowtei zahialga app-d burtgegdehgvi (admin panel)
     where.status = { not: "PENDING" };
   }
 
@@ -152,7 +155,9 @@ export async function getAdminBookings() {
   await checkAdmin();
   const bookings = await prisma.booking.findMany({
     where: {
-      status: { not: "PENDING" },
+      // Only show PAID, CONFIRMED, or BLOCKED slots in the scheduler.
+      // PENDING should be hidden until payment is successful.
+      status: { in: ["PAID", "CONFIRMED", "BLOCKED"] },
     },
     include: { service: true },
     orderBy: { startTime: "asc" },
@@ -238,80 +243,27 @@ export async function createBookingAndPay(data: {
   try {
     const validated = BookingSchema.parse(data);
 
-    const bookingResult = await prisma.$transaction(async (tx) => {
-      await lockBookingWriteScope(tx, validated.serviceId);
-
-      const service = await tx.service.findUnique({
-        where: { id: validated.serviceId },
-      });
-
-      if (!service) {
-        return { success: false as const, error: "Үйлчилгээ олдсонгүй" };
-      }
-
-      const startTime = new Date(validated.startTime);
-      const endTime = new Date(startTime.getTime() + service.duration * 60000);
-      const activeWindow = new Date(Date.now() - 10 * 60 * 1000); // 10 min
-
-      // Re-check inside transaction after lock to prevent concurrent overlaps.
-      const existingBooking = await tx.booking.findFirst({
-        where: {
-          startTime: { lt: endTime },
-          endTime: { gt: startTime },
-          OR: [
-            { status: { in: ["PAID", "CONFIRMED", "BLOCKED"] } },
-            {
-              status: "PENDING",
-              OR: [
-                { paymentId: { not: null } },
-                { createdAt: { gte: activeWindow } },
-              ],
-            },
-          ],
-        },
-      });
-
-      if (existingBooking) {
-        return {
-          success: false as const,
-          error:
-            "Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.",
-        };
-      }
-
-      const booking = await tx.booking.create({
-        data: {
-          serviceId: validated.serviceId,
-          customerName: validated.customerName,
-          customerPhone: validated.customerPhone,
-          startTime,
-          endTime,
-          status: "PENDING",
-        },
-      });
-
-      return { success: true as const, booking };
-    });
-
-    if (!bookingResult.success) {
-      return { success: false, error: bookingResult.error };
-    }
-
-    const booking = bookingResult.booking;
+    // Instead of creating a record in DB, we generate a transaction ID (UUID)
+    // and pass all details to Bonum. The record will be created in the webhook after success.
+    const transactionId = crypto.randomUUID();
 
     // Create invoice via Bonum
-    const invoiceResult = await createBonumInvoice(booking.id);
+    const invoiceResult = await createBonumInvoice({
+      serviceId: validated.serviceId,
+      customerName: validated.customerName,
+      customerPhone: validated.customerPhone,
+      startTime: validated.startTime,
+      transactionId,
+    });
 
     if (!invoiceResult.success) {
-      // If invoice creation failed, delete the booking so it doesn't block the slot
-      await prisma.booking.delete({ where: { id: booking.id } });
       return {
         success: false,
         error: invoiceResult.error || "Төлбөрийн нэхэмжлэх үүсгэж чадсангүй.",
       };
     }
 
-    return { success: true, followUpLink: invoiceResult.followUpLink };
+    return { success: true, followUpLink: invoiceResult.followUpLink, transactionId };
   } catch (err) {
     const error = err as Error;
     console.error("createBookingAndPay error:", error);
@@ -521,6 +473,7 @@ export async function getAvailableSlots(
           status: "PENDING",
           OR: [
             { paymentId: { not: null } },
+            // Only block for 10 minutes for pending bookings to prevent "locking" the whole day
             { createdAt: { gte: activeWindow } },
           ],
         },
@@ -623,20 +576,25 @@ function generateChecksum(body: Record<string, unknown>): string {
     .digest("hex");
 }
 
-export async function createBonumInvoice(bookingId: string) {
-  console.log(`Starting Bonum invoice creation for booking: ${bookingId}`);
+export async function createBonumInvoice(data: {
+  serviceId: string;
+  customerName: string;
+  customerPhone: string;
+  startTime: Date;
+  transactionId: string;
+}) {
+  console.log(`Starting Bonum invoice creation for transaction: ${data.transactionId}`);
   try {
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      include: { service: true },
+    const service = await prisma.service.findUnique({
+      where: { id: data.serviceId },
     });
 
-    if (!booking) {
-      console.error(`Booking not found: ${bookingId}`);
-      return { success: false, error: "Захиалга олдсонгүй" };
+    if (!service) {
+      console.error(`Service not found: ${data.serviceId}`);
+      return { success: false, error: "Үйлчилгээ олдсонгүй" };
     }
 
-    // 1. Get Access Token
+    // 1. Get Access Token remains the same...
     console.log("Fetching Bonum access token...");
     const authRes = await fetch(
       `${BONUM_BASE_URL}/bonum-gateway/ecommerce/auth/create`,
@@ -678,17 +636,14 @@ export async function createBonumInvoice(bookingId: string) {
 
     const actualHost = forwardedHost || host;
 
-    // Determine baseUrl
     let baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
     if (!baseUrl || baseUrl === "") {
-      // If no ENV, detect from headers but be careful with localhost in production
       if (
         actualHost.includes("localhost") ||
         actualHost.includes("127.0.0.1") ||
         actualHost.includes("8080")
       ) {
-        // If we detect 8080 or localhost but it's likely production, fallback to production URL
         if (forwardedHost && !forwardedHost.includes("localhost")) {
           baseUrl = `https://${forwardedHost}`;
         } else {
@@ -701,27 +656,34 @@ export async function createBonumInvoice(bookingId: string) {
       }
     }
 
-    // Final safety: if we are still seeing localhost but we have a production-like host or it's not localhost
     if (baseUrl.includes("localhost") && !actualHost.includes("localhost")) {
       baseUrl = `https://capullo-production.up.railway.app`;
     }
 
     console.log(`Using Base URL for callbacks: ${baseUrl}`);
 
+    // Encode details into callback URL so webhook can create the record.
+    const callbackUrl = new URL(`${baseUrl}/api/webhook/bonum`);
+    callbackUrl.searchParams.set("transactionId", data.transactionId);
+    callbackUrl.searchParams.set("serviceId", data.serviceId);
+    callbackUrl.searchParams.set("customerName", data.customerName);
+    callbackUrl.searchParams.set("customerPhone", data.customerPhone);
+    callbackUrl.searchParams.set("startTime", data.startTime.toISOString());
+
     const body = {
-      amount: booking.service.price,
-      callback: `${baseUrl}/api/webhook/bonum?bookingId=${booking.id}`,
-      redirectUri: `${baseUrl}/book/success/${booking.id}`,
-      redirectUrl: `${baseUrl}/book/success/${booking.id}`,
-      returnUrl: `${baseUrl}/book/success/${booking.id}`,
-      transactionId: booking.id,
+      amount: service.price,
+      callback: callbackUrl.toString(),
+      redirectUri: `${baseUrl}/book/success/${data.transactionId}`,
+      redirectUrl: `${baseUrl}/book/success/${data.transactionId}`,
+      returnUrl: `${baseUrl}/book/success/${data.transactionId}`,
+      transactionId: data.transactionId,
       expiresIn: 3600,
       items: [
         {
-          title: booking.service.name,
-          remark: `${booking.customerName} - ${booking.customerPhone}`,
+          title: service.name,
+          remark: `${data.customerName} - ${data.customerPhone}`,
           image: "https://capullo.mn/logo.png",
-          amount: booking.service.price,
+          amount: service.price,
           count: 1,
         },
       ],
@@ -754,41 +716,26 @@ export async function createBonumInvoice(bookingId: string) {
     }
 
     const invoiceData = await invoiceRes.json();
-    // Handle both direct and nested response structure
-    const followUpLink =
-      invoiceData.followUpLink || invoiceData.body?.followUpLink;
-    const invoiceId =
-      invoiceData.invoiceId || invoiceData.body?.invoiceId || invoiceData.id;
+    const followUpLink = invoiceData.followUpLink || invoiceData.body?.followUpLink;
 
     if (!followUpLink) {
       console.error("Bonum response missing followUpLink:", invoiceData);
-      return {
-        success: false,
-        error: "Төлбөрийн холбоос хүлээн авч чадсангүй.",
-      };
+      return { success: false, error: "Төлбөрийн холбоос хүлээн авч чадсангүй." };
     }
 
-    // Update booking with invoice ID for tracking
-    console.log(`Updating booking ${bookingId} with invoiceId: ${invoiceId}`);
-    await prisma.booking.update({
-      where: { id: bookingId },
-      data: { paymentId: String(invoiceId) },
-    });
-
-    // Store booking ID in cookie for redirect fallback
+    // Store transaction ID in cookie for redirect fallback
     try {
       const c = await cookies();
-      c.set("pendingBookingId", bookingId, {
-        maxAge: 3600, // 1 hour
+      c.set("pendingBookingId", data.transactionId, {
+        maxAge: 3600,
         httpOnly: true,
-        secure: true, // Always secure in production/Railway
+        secure: true,
         sameSite: "lax",
       });
     } catch (cookieErr) {
       console.warn("Failed to set pendingBookingId cookie:", cookieErr);
     }
 
-    console.log("Invoice created successfully, returning link.");
     return { success: true, followUpLink };
   } catch (err) {
     const error = err as Error;

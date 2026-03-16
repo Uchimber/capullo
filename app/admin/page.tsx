@@ -9,8 +9,11 @@ export const dynamic = 'force-dynamic';
 export default async function AdminDashboard() {
   const [servicesCount, bookingsCount, bookings] = await Promise.all([
     prisma.service.count(),
-    prisma.booking.count(),
+    prisma.booking.count({
+      where: { status: { in: ["PAID", "CONFIRMED", "BLOCKED"] } },
+    }),
     prisma.booking.findMany({
+      where: { status: { in: ["PAID", "CONFIRMED", "BLOCKED"] } },
       take: 5,
       orderBy: { createdAt: "desc" },
       include: { service: true },

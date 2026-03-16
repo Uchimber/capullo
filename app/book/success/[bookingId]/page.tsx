@@ -21,9 +21,13 @@ export default async function SuccessPage({
     return notFound();
   }
 
+  // No booking record in DB yet (normal for our 'No Pending' logic before webhook finishes)
+  // or it was found by paymentId (UUID) but still pending creation/update.
   const booking = await prisma.booking
-    .findUnique({
-      where: { id: bookingId },
+    .findFirst({
+      where: {
+        OR: [{ id: bookingId }, { paymentId: bookingId }],
+      },
       include: { service: true },
     })
     .catch((err) => {
@@ -31,9 +35,9 @@ export default async function SuccessPage({
       return null;
     });
 
-  if (!booking) {
-    console.warn(`SuccessPage: Booking ${bookingId} not found`);
-    return notFound();
+  if (!booking || booking.status === "PENDING") {
+    // If not found or still PENDING, show waiting/polling UI.
+    return <SuccessWaiting bookingId={bookingId} />;
   }
 
   if (booking.status === "CANCELLED") {
@@ -45,7 +49,7 @@ export default async function SuccessPage({
             Төлбөр амжилтгүй болсон тул захиалга бүртгэгдсэнгүй. Та дахин захиалах боломжтой.
           </p>
           <Link
-            href={`/book/${booking.service.id}`} // if not available, fallback to home or service page
+            href="/"
             className="inline-block mt-4 w-full bg-mauve text-white py-3 rounded-xl font-bold text-sm"
           >
             Цагыг дахин сонгох
@@ -61,10 +65,7 @@ export default async function SuccessPage({
     );
   }
 
-  // While webhook has not yet set PAID, show waiting state and poll.
-  if (booking.status !== "PAID") {
-    return <SuccessWaiting bookingId={bookingId} />;
-  }
+  // If found and not PENDING/CANCELLED, we assume it's PAID or CONFIRMED.
 
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center p-6 md:p-8">
