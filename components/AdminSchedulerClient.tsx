@@ -661,19 +661,46 @@ export default function AdminSchedulerClient({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="text-xs font-bold uppercase tracking-wider text-dusty">
-              Хугацаа (минут)
+              Хугацаа сонгох
             </label>
-            <input
-              type="number"
-              min={1}
-              step={1}
-              value={blockDuration}
-              onChange={(e) => setBlockDuration(e.target.value)}
-              className="w-full rounded-xl border border-rose-soft/50 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-mauve"
-              placeholder="60"
-            />
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "30 мин", minutes: 30 },
+                { label: "1 цаг", minutes: 60 },
+                { label: "2 цаг", minutes: 120 },
+                { label: "3 цаг", minutes: 180 },
+                { label: "1 өдөр", minutes: 1440 },
+              ].map(({ label, minutes }) => (
+                <button
+                  key={minutes}
+                  type="button"
+                  onClick={() => setBlockDuration(String(minutes))}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-2 ${
+                    blockDuration === String(minutes)
+                      ? "bg-mauve border-mauve text-white shadow-lg shadow-mauve/20"
+                      : "bg-white border-rose-soft/40 text-dusty hover:border-mauve hover:bg-blush/20"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-dusty/80">
+                Эсвэл минутаар оруулах
+              </label>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={blockDuration}
+                onChange={(e) => setBlockDuration(e.target.value)}
+                className="w-full rounded-xl border border-rose-soft/50 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-mauve"
+                placeholder="60"
+              />
+            </div>
           </div>
 
           <DialogFooter className="bg-transparent border-t-0 p-0 -mx-0 -mb-0">

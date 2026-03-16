@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { addMinutes, startOfDay, endOfDay, isBefore } from "date-fns";
 
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma";
 
 import { auth } from "@clerk/nextjs/server";
 import { cookies, headers } from "next/headers";
