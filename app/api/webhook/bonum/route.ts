@@ -46,39 +46,54 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid checksum" }, { status: 401 });
     }
 
-    // Capture various possible status and ID fields based on documentation
-    const topStatus = (body.status || "").toString().toUpperCase();
-    const bodyStatus = (body.body?.status || body.payment_status || "")
+    // Capture various possible status and ID fields (Bonum may use different shapes)
+    const topStatus = (body.status ?? body.result ?? "").toString().toUpperCase();
+    const bodyStatus = (
+      body.body?.status ??
+      body.payment_status ??
+      body.body?.paymentStatus ??
+      ""
+    )
       .toString()
       .toUpperCase();
 
-    // The actual "transactionId" is what we send as "transactionId" or "id"
+    // Transaction/order ID we sent; Bonum may echo it under different keys
     const transactionId =
       body.transactionId ||
       body.body?.transactionId ||
       body.orderId ||
       body.body?.orderId ||
       body.id ||
-      body.body?.id;
+      body.body?.id ||
+      body.referenceId ||
+      body.body?.referenceId ||
+      body.transaction_id ||
+      body.body?.transaction_id ||
+      body.ref ||
+      body.body?.ref;
     const invoiceId =
-      body.invoiceId || body.body?.invoiceId || body.paymentId || body.id;
+      body.invoiceId || body.body?.invoiceId || body.paymentId || body.body?.paymentId || body.id || body.body?.id;
 
     console.log(
       `Bonum Webhook Data: topStatus=${topStatus}, bodyStatus=${bodyStatus}, transactionId=${transactionId}`,
     );
 
-    // Check if status indicates success. Bonum often sends top-level SUCCESS and inner PAID.
+    // Check if status indicates success (Bonum may use SUCCESS, PAID, COMPLETED, 0, 1, etc.)
     const isSuccess =
-      ["SUCCESS", "PAID", "COMPLETED", "0"].includes(topStatus) ||
-      ["PAID", "SUCCESS", "0"].includes(bodyStatus);
+      ["SUCCESS", "PAID", "COMPLETED", "0", "1", "DONE"].includes(topStatus) ||
+      ["PAID", "SUCCESS", "COMPLETED", "0", "1", "DONE"].includes(bodyStatus);
 
-    if (isSuccess && transactionId) {
+    // Use transactionId (our booking id) or invoiceId (Bonum id we store in booking.paymentId)
+    const idToSearch = transactionId
+      ? String(transactionId)
+      : invoiceId
+        ? String(invoiceId)
+        : null;
+
+    if (isSuccess && idToSearch) {
       console.log(
-        `Processing successful payment for transaction: ${transactionId}`,
+        `Processing successful payment for id: ${idToSearch}`,
       );
-
-      // Ensure we treat the ID as a string for the query
-      const idToSearch = String(transactionId);
 
       const booking = await prisma.booking.findUnique({
         where: { id: idToSearch },
@@ -138,7 +153,7 @@ export async function POST(req: Request) {
       revalidatePath(`/book/success/${idToSearch}`);
     } else {
       console.warn(
-        `⚠️ Bonum Webhook: Success conditions not met. isSuccess=${isSuccess}, transId=${transactionId}`,
+        `⚠️ Bonum Webhook: Success conditions not met. isSuccess=${isSuccess}, idToSearch=${idToSearch}`,
       );
     }
 
