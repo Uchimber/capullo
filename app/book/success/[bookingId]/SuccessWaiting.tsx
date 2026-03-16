@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Loader2, RefreshCw } from "lucide-react";
 import { getBookingStatusForSuccess } from "@/lib/actions";
 
-function goToSuccess(router: ReturnType<typeof useRouter>, bookingId: string) {
-  router.push(`/book/success/${bookingId}?v=${Date.now()}`);
+function goToSuccess(router: ReturnType<typeof useRouter>) {
+  router.refresh();
 }
 
 export default function SuccessWaiting({ bookingId }: { bookingId: string }) {
@@ -17,13 +17,18 @@ export default function SuccessWaiting({ bookingId }: { bookingId: string }) {
 
   const checkStatus = useCallback(async () => {
     setChecking(true);
+    setMessage("Шалгаж байна...");
     try {
       const result = await getBookingStatusForSuccess(bookingId);
       if (result?.status === "PAID") {
         setMessage("Амжилттай!");
-        goToSuccess(router, bookingId);
+        goToSuccess(router);
         return;
       }
+      setMessage("Төлбөр баталгаажуулж байна...");
+    } catch (err) {
+      console.error("Check status error:", err);
+      setMessage("Алдаа гарлаа. Дахин оролдоно уу.");
     } finally {
       setChecking(false);
     }
@@ -36,10 +41,10 @@ export default function SuccessWaiting({ bookingId }: { bookingId: string }) {
       if (cancelled) return;
       if (result?.status === "PAID") {
         setMessage("Амжилттай!");
-        goToSuccess(router, bookingId);
+        goToSuccess(router);
         return;
       }
-      timeoutRef.current = setTimeout(poll, 1500);
+      timeoutRef.current = setTimeout(poll, 2000);
     };
     timeoutRef.current = setTimeout(poll, 0);
     return () => {

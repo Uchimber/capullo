@@ -33,6 +33,10 @@ export async function getBookingStatusForSuccess(idOrPaymentId: string) {
     },
     select: { status: true, id: true },
   });
+  if (b?.status === "PAID") {
+    revalidatePath(`/book/success/${idOrPaymentId}`);
+    revalidatePath(`/book/success/${b.id}`);
+  }
   return b ? { status: b.status, id: b.id } : null;
 }
 
