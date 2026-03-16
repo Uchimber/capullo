@@ -20,6 +20,7 @@ import {
   blockSlot,
   getAdminBookings,
 } from "@/lib/actions";
+import type { BookingStatusValue } from "@/lib/booking-status";
 import {
   Plus,
   Calendar as CalendarIcon,
@@ -47,7 +48,7 @@ interface Booking {
   startTime: Date | string;
   endTime: Date | string;
   serviceId: string;
-  status: string;
+  status: BookingStatusValue;
   service: { name: string };
 }
 
@@ -131,7 +132,7 @@ export default function AdminSchedulerClient({
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
+    mutationFn: ({ id, status }: { id: string; status: BookingStatusValue }) =>
       updateBookingStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });

@@ -10,6 +10,7 @@ import { auth } from "@clerk/nextjs/server";
 import { cookies, headers } from "next/headers";
 
 import { ServiceSchema, BookingSchema } from "@/lib/schema";
+import { isBookingStatus, type BookingStatusValue } from "@/lib/booking-status";
 
 async function checkAdmin() {
   const session = await auth();
@@ -20,6 +21,14 @@ async function checkAdmin() {
   if (role !== "admin") {
     throw new Error("Энэ үйлдлийг хийхэд админ эрх шаардлагатай.");
   }
+}
+
+async function lockBookingWriteScope(
+  tx: Prisma.TransactionClient,
+  serviceId: string,
+) {
+  // Postgres advisory transaction lock to serialize booking writes per service.
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`booking-service:${serviceId}`}))`;
 }
 
 // SERVICES
@@ -83,7 +92,7 @@ export async function getServices() {
 export async function getBookings(params: {
   page?: number;
   limit?: number;
-  status?: string;
+  status?: BookingStatusValue | "ALL";
   search?: string;
 }) {
   await checkAdmin();
@@ -143,44 +152,43 @@ export async function createBooking(data: {
 }) {
   const validated = BookingSchema.parse(data);
 
-  const service = await prisma.service.findUnique({
-    where: { id: validated.serviceId },
-  });
+  const booking = await prisma.$transaction(async (tx) => {
+    await lockBookingWriteScope(tx, validated.serviceId);
 
-  if (!service) throw new Error("Үйлчилгээ олдсонгүй");
+    const service = await tx.service.findUnique({
+      where: { id: validated.serviceId },
+    });
 
-  const startTime = new Date(validated.startTime);
-  const endTime = new Date(startTime.getTime() + service.duration * 60000);
+    if (!service) throw new Error("Үйлчилгээ олдсонгүй");
 
-  // Senior Fix: Prevent Overlapping (Race Condition Check)
-  // Check if slot is already occupied right before creating
-  const existingBooking = await prisma.booking.findFirst({
-    where: {
-      status: { not: "CANCELLED" },
-      OR: [
-        {
-          startTime: { lt: endTime },
-          endTime: { gt: startTime },
-        },
-      ],
-    },
-  });
+    const startTime = new Date(validated.startTime);
+    const endTime = new Date(startTime.getTime() + service.duration * 60000);
 
-  if (existingBooking) {
-    throw new Error(
-      "Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.",
-    );
-  }
+    // Re-check availability inside the lock+transaction to avoid double-booking.
+    const existingBooking = await tx.booking.findFirst({
+      where: {
+        status: { not: "CANCELLED" },
+        startTime: { lt: endTime },
+        endTime: { gt: startTime },
+      },
+    });
 
-  const booking = await prisma.booking.create({
-    data: {
-      serviceId: validated.serviceId,
-      customerName: validated.customerName,
-      customerPhone: validated.customerPhone,
-      startTime: startTime,
-      endTime: endTime,
-      status: "PENDING",
-    },
+    if (existingBooking) {
+      throw new Error(
+        "Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.",
+      );
+    }
+
+    return tx.booking.create({
+      data: {
+        serviceId: validated.serviceId,
+        customerName: validated.customerName,
+        customerPhone: validated.customerPhone,
+        startTime: startTime,
+        endTime: endTime,
+        status: "PENDING",
+      },
+    });
   });
 
   // Consistently revalidate all relevant paths
@@ -203,54 +211,64 @@ export async function createBookingAndPay(data: {
   try {
     const validated = BookingSchema.parse(data);
 
-    const service = await prisma.service.findUnique({
-      where: { id: validated.serviceId },
+    const bookingResult = await prisma.$transaction(async (tx) => {
+      await lockBookingWriteScope(tx, validated.serviceId);
+
+      const service = await tx.service.findUnique({
+        where: { id: validated.serviceId },
+      });
+
+      if (!service) {
+        return { success: false as const, error: "Үйлчилгээ олдсонгүй" };
+      }
+
+      const startTime = new Date(validated.startTime);
+      const endTime = new Date(startTime.getTime() + service.duration * 60000);
+      const activeWindow = new Date(Date.now() - 10 * 60 * 1000); // 10 min
+
+      // Re-check inside transaction after lock to prevent concurrent overlaps.
+      const existingBooking = await tx.booking.findFirst({
+        where: {
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+          OR: [
+            { status: { in: ["PAID", "CONFIRMED", "BLOCKED"] } },
+            {
+              status: "PENDING",
+              paymentId: { not: null },
+              createdAt: { gte: activeWindow },
+            },
+          ],
+        },
+      });
+
+      if (existingBooking) {
+        return {
+          success: false as const,
+          error:
+            "Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.",
+        };
+      }
+
+      const booking = await tx.booking.create({
+        data: {
+          serviceId: validated.serviceId,
+          customerName: validated.customerName,
+          customerPhone: validated.customerPhone,
+          startTime,
+          endTime,
+          status: "PENDING",
+        },
+      });
+
+      return { success: true as const, booking };
     });
 
-    if (!service) {
-      return { success: false, error: "Үйлчилгээ олдсонгүй" };
+    if (!bookingResult.success) {
+      return { success: false, error: bookingResult.error };
     }
 
-    const startTime = new Date(validated.startTime);
-    const endTime = new Date(startTime.getTime() + service.duration * 60000);
-
-    const activeWindow = new Date(Date.now() - 10 * 60 * 1000); // 10 min
-
-    // Check for overlap with paid/confirmed/blocked AND active pending bookings
-    const existingBooking = await prisma.booking.findFirst({
-      where: {
-        startTime: { lt: endTime },
-        endTime: { gt: startTime },
-        OR: [
-          { status: { in: ["PAID", "CONFIRMED", "BLOCKED"] } },
-          {
-            status: "PENDING",
-            paymentId: { not: null },
-            createdAt: { gte: activeWindow },
-          },
-        ],
-      },
-    });
-
-    if (existingBooking) {
-      return {
-        success: false,
-        error:
-          "Уучлаарай, энэ цаг саяхан захиалагдсан байна. Өөр цаг сонгоно уу.",
-      };
-    }
-
-    // Create the booking NOW (when user clicks Pay)
-    const booking = await prisma.booking.create({
-      data: {
-        serviceId: validated.serviceId,
-        customerName: validated.customerName,
-        customerPhone: validated.customerPhone,
-        startTime,
-        endTime,
-        status: "PENDING",
-      },
-    });
+    const booking = bookingResult.booking;
 
     // Create invoice via Bonum
     const invoiceResult = await createBonumInvoice(booking.id);
@@ -320,6 +338,9 @@ export async function blockSlot(data: {
 
 export async function updateBookingStatus(id: string, status: string) {
   await checkAdmin();
+  if (!isBookingStatus(status)) {
+    throw new Error("Захиалгын төлөв буруу байна.");
+  }
   await prisma.booking.update({
     where: { id },
     data: { status },
@@ -526,17 +547,23 @@ export async function getBusinessSettings() {
 }
 
 // BONUM PAYMENT INTEGRATION
-const BONUM_TERMINAL_ID = "17172267";
-const BONUM_SECRET_KEY =
-  "1fc53f9389f489ff6e04617bd6338a710e1e7c579cb572aec421f560f363119c0e0039e4b765e53c5339c1e6c7727985a488ab4ac8141140571256af36c3f410421b2ff278fb499b10e3bdb7d3236212";
+const BONUM_TERMINAL_ID = process.env.BONUM_TERMINAL_ID || "17172267";
+const BONUM_SECRET_KEY = process.env.BONUM_SECRET_KEY;
 const BONUM_BASE_URL = "https://apis.bonum.mn";
 
 import crypto from "crypto";
 
+function getBonumSecretKey() {
+  if (!BONUM_SECRET_KEY) {
+    throw new Error("BONUM_SECRET_KEY is missing in environment variables.");
+  }
+  return BONUM_SECRET_KEY;
+}
+
 function generateChecksum(body: Record<string, unknown>): string {
   const rawBody = JSON.stringify(body);
   return crypto
-    .createHmac("sha256", BONUM_SECRET_KEY)
+    .createHmac("sha256", getBonumSecretKey())
     .update(rawBody)
     .digest("hex");
 }
@@ -561,7 +588,7 @@ export async function createBonumInvoice(bookingId: string) {
       {
         method: "GET",
         headers: {
-          Authorization: `AppSecret ${BONUM_SECRET_KEY}`,
+          Authorization: `AppSecret ${getBonumSecretKey()}`,
           "X-TERMINAL-ID": BONUM_TERMINAL_ID,
         },
         cache: "no-store",

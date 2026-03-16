@@ -4,39 +4,46 @@ import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 
-const BONUM_SECRET_KEY =
-  "1fc53f9389f489ff6e04617bd6338a710e1e7c579cb572aec421f560f363119c0e0039e4b765e53c5339c1e6c7727985a488ab4ac8141140571256af36c3f410421b2ff278fb499b10e3bdb7d3236212";
+const BONUM_SECRET_KEY = process.env.BONUM_SECRET_KEY;
+
+function getBonumSecretKey() {
+  if (!BONUM_SECRET_KEY) {
+    throw new Error("BONUM_SECRET_KEY is missing in environment variables.");
+  }
+  return BONUM_SECRET_KEY;
+}
+
+function isValidChecksum(incoming: string | null, rawBody: string) {
+  if (!incoming) return false;
+  const expected = crypto
+    .createHmac("sha256", getBonumSecretKey())
+    .update(rawBody)
+    .digest("hex");
+
+  const incomingBuf = Buffer.from(incoming, "utf8");
+  const expectedBuf = Buffer.from(expected, "utf8");
+  if (incomingBuf.length !== expectedBuf.length) return false;
+  return crypto.timingSafeEqual(incomingBuf, expectedBuf);
+}
 
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
-    const headers = Object.fromEntries(req.headers.entries());
     console.log("--- Bonum Webhook Start ---");
-    console.log("Headers:", JSON.stringify(headers, null, 2));
-    console.log("Raw Body:", rawBody);
 
     let body;
     try {
       body = JSON.parse(rawBody);
-    } catch (_) {
+    } catch {
       console.error("Bonum Webhook: Body is not JSON");
       return NextResponse.json({ error: "Body is not JSON" }, { status: 400 });
     }
 
     // 1. Verify Checksum
     const incomingChecksum = req.headers.get("x-checksum-v2");
-    const calculatedChecksum = crypto
-      .createHmac("sha256", BONUM_SECRET_KEY)
-      .update(rawBody)
-      .digest("hex");
-
-    if (incomingChecksum !== calculatedChecksum) {
-      console.warn("🚨 Bonum Webhook: Checksum Mismatch!");
-      console.warn("Expected:", calculatedChecksum);
-      console.warn("Received:", incomingChecksum);
-      console.warn("Body Length:", rawBody.length);
-      console.warn("Processing anyway for debugging/unblocking business...");
-      // return NextResponse.json({ error: 'Auth failed' }, { status: 401 }); // Commented out to unblock
+    if (!isValidChecksum(incomingChecksum, rawBody)) {
+      console.warn("Bonum Webhook rejected: invalid checksum");
+      return NextResponse.json({ error: "Invalid checksum" }, { status: 401 });
     }
 
     // Capture various possible status and ID fields based on documentation

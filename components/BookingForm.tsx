@@ -109,7 +109,7 @@ export default function BookingForm({ serviceId }: Props) {
       {/* Date Picker */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <label className="text-xs font-bold uppercase tracking-wider text-dusty">
+          <label className="hidden text-xs font-bold uppercase tracking-wider text-dusty sm:block">
             Өдөр сонгох
           </label>
           <div className="flex items-center gap-1 bg-blush/50 p-1 rounded-xl">

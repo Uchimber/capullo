@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { getBookings, updateBookingStatus } from "@/lib/actions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { BookingStatusValue } from "@/lib/booking-status";
 import {
   Check,
   X,
@@ -26,14 +27,18 @@ interface Booking {
   customerPhone: string;
   startTime: string;
   endTime: string;
-  status: string;
+  status: BookingStatusValue;
   serviceId: string;
   paymentId: string | null;
   createdAt: string;
   service: { name: string; price: number };
 }
 
-const STATUS_TABS = [
+const STATUS_TABS: Array<{
+  key: BookingStatusValue | "ALL";
+  label: string;
+  color: string;
+}> = [
   { key: "PAID", label: "Төлөгдсөн", color: "emerald" },
   { key: "PENDING", label: "Хүлээгдэж буй", color: "amber" },
   { key: "CANCELLED", label: "Цуцлагдсан", color: "rose" },
@@ -43,7 +48,9 @@ const STATUS_TABS = [
 
 export default function AdminBookingsClient() {
   const queryClient = useQueryClient();
-  const [activeStatus, setActiveStatus] = useState("PAID");
+  const [activeStatus, setActiveStatus] = useState<BookingStatusValue | "ALL">(
+    "PAID",
+  );
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
@@ -69,7 +76,7 @@ export default function AdminBookingsClient() {
       newStatus,
     }: {
       bookingId: string;
-      newStatus: string;
+      newStatus: BookingStatusValue;
     }) => updateBookingStatus(bookingId, newStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
@@ -80,7 +87,10 @@ export default function AdminBookingsClient() {
     },
   });
 
-  const handleStatusChange = async (bookingId: string, newStatus: string) => {
+  const handleStatusChange = async (
+    bookingId: string,
+    newStatus: BookingStatusValue,
+  ) => {
     statusMutation.mutate({ bookingId, newStatus });
   };
 
