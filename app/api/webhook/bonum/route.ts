@@ -51,8 +51,18 @@ export async function POST(req: Request) {
 
     // 1. Verify Checksum
     const incomingChecksum = req.headers.get("x-checksum-v2");
+
+    console.log("--- Bonum Webhook raw request ---");
+    console.log("URL:", req.url);
+    try {
+      console.log("Parsed URL search params:", Object.fromEntries(new URL(req.url).searchParams.entries()));
+    } catch (urlErr) {
+      console.warn("Could not parse request URL for search params", urlErr);
+    }
+    console.log("Raw body:", rawBody);
+
     if (!isValidChecksum(incomingChecksum, rawBody)) {
-      console.warn("Bonum Webhook rejected: invalid checksum");
+      console.warn("Bonum Webhook rejected: invalid checksum", { incomingChecksum });
       return NextResponse.json({ error: "Invalid checksum" }, { status: 401 });
     }
 
@@ -72,35 +82,50 @@ export async function POST(req: Request) {
     const callbackBookingId = callbackParams.get("bookingId");
 
     // Transaction/order ID we sent; Bonum may echo it under different keys
-    const transactionId =
-      callbackBookingId ||
-      body.transactionId ||
-      body.body?.transactionId ||
-      body.orderId ||
-      body.body?.orderId ||
-      body.id ||
-      body.body?.id ||
-      body.referenceId ||
-      body.body?.referenceId ||
-      body.transaction_id ||
-      body.body?.transaction_id ||
-      body.ref ||
-      body.body?.ref;
-    const invoiceId =
-      body.invoiceId || body.body?.invoiceId || body.paymentId || body.body?.paymentId || body.id || body.body?.id;
+    const callbackBookingId = new URL(req.url).searchParams.get("bookingId");
+    const candidateIds = [
+      callbackBookingId,
+      body.transactionId,
+      body.body?.transactionId,
+      body.orderId,
+      body.body?.orderId,
+      body.referenceId,
+      body.body?.referenceId,
+      body.transaction_id,
+      body.body?.transaction_id,
+      body.ref,
+      body.body?.ref,
+      body.invoiceId,
+      body.body?.invoiceId,
+      body.paymentId,
+      body.body?.paymentId,
+      body.id,
+      body.body?.id,
+    ].filter((id) => !!id) as string[];
+
+    const transactionId = candidateIds[0] || null;
+    const invoiceId = body.invoiceId || body.body?.invoiceId || body.paymentId || body.body?.paymentId || body.id || body.body?.id;
 
     console.log(
-      `Bonum Webhook Data: topStatus=${topStatus}, bodyStatus=${bodyStatus}, transactionId=${transactionId}`,
+      `Bonum Webhook Data: topStatus=${topStatus}, bodyStatus=${bodyStatus}, transactionId=${transactionId}, invoiceId=${invoiceId}, callbackBookingId=${callbackBookingId}`,
     );
 
-    // Check if status indicates success (Bonum may use SUCCESS, PAID, COMPLETED, 0, 1, etc.)
+    // Check if status indicates success (Bonum may use SUCCESS, PAID, COMPLETED, 0, 1, DONE etc.)
+    const successStatusSet = ["SUCCESS", "PAID", "COMPLETED", "0", "1", "DONE"];
+    const failureStatusSet = ["FAILED", "FAIL", "ERROR", "CANCELLED", "DECLINED"];
+
     const isSuccess =
-      ["SUCCESS", "PAID", "COMPLETED", "0", "1", "DONE"].includes(topStatus) ||
-      ["PAID", "SUCCESS", "COMPLETED", "0", "1", "DONE"].includes(bodyStatus);
+      successStatusSet.includes(topStatus) ||
+      successStatusSet.includes(bodyStatus) ||
+      (body.type?.toString().toUpperCase() === "PAYMENT" && topStatus === "SUCCESS") ||
+      (body.type?.toString().toUpperCase() === "CARD-TOKEN" && topStatus === "SUCCESS") ||
+      (body.body?.status?.toString().toUpperCase() === "SUCCESS") ||
+      (body.body?.status?.toString().toUpperCase() === "PAID");
 
     const isFailure =
-      ["FAILED", "FAIL", "ERROR", "CANCELLED", "DECLINED"].includes(topStatus) ||
-      ["FAILED", "FAIL", "ERROR", "CANCELLED", "DECLINED"].includes(bodyStatus);
+      failureStatusSet.includes(topStatus) ||
+      failureStatusSet.includes(bodyStatus) ||
+      (body.type?.toString().toUpperCase() === "PAYMENT" && topStatus === "FAILED");
 
     // Use callback bookingId (from query), transactionId (our booking id), or invoiceId (Bonum id we store in booking.paymentId)
     const idToSearch = transactionId
