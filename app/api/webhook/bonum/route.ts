@@ -198,10 +198,9 @@ export async function GET(req: Request) {
       return NextResponse.redirect(new URL("/", baseUrl));
     }
 
-    const isPaid = booking.status === "PAID";
-    const redirectPath = isPaid
-      ? `/book/success/${booking.id}`
-      : `/book/payment/${booking.id}`;
+    // Always send user to success page. If not yet PAID, success page shows
+    // waiting state and polls until webhook sets PAID (avoids showing payment form again).
+    const redirectPath = `/book/success/${booking.id}`;
     const redirectUrl = new URL(redirectPath, baseUrl);
 
     // Safety check for localhost in production
