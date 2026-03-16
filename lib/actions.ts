@@ -576,6 +576,32 @@ function generateChecksum(body: Record<string, unknown>): string {
     .digest("hex");
 }
 
+/** Legacy flow: create invoice for an existing booking (e.g. from admin). */
+export async function createBonumInvoiceForExistingBooking(bookingId: string) {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { service: true },
+  });
+  if (!booking) {
+    return { success: false, error: "Захиалга олдсонгүй" };
+  }
+  if (booking.status === "PAID") {
+    return { success: false, error: "Энэ захиалгын төлбөр аль хэдийн төлөгдсөн." };
+  }
+  // Use booking.id as transactionId so webhook can find this booking by paymentId
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data: { paymentId: booking.id },
+  });
+  return createBonumInvoice({
+    serviceId: booking.serviceId,
+    customerName: booking.customerName,
+    customerPhone: booking.customerPhone,
+    startTime: booking.startTime,
+    transactionId: booking.id,
+  });
+}
+
 export async function createBonumInvoice(data: {
   serviceId: string;
   customerName: string;
