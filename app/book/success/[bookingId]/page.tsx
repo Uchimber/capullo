@@ -33,6 +33,11 @@ export default async function SuccessPage({
     return notFound();
   }
 
+  // Prevent showing "success" page for unpaid/cancelled bookings.
+  if (booking.status !== "PAID") {
+    return notFound();
+  }
+
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center p-6 md:p-8">
       <div className="max-w-2xl w-full grid grid-cols-1 md:grid-cols-5 bg-white rounded-3xl shadow-xl shadow-sage/20 border border-border/50 overflow-hidden relative">

@@ -40,7 +40,7 @@ const STATUS_TABS: Array<{
   color: string;
 }> = [
   { key: "PAID", label: "Төлөгдсөн", color: "emerald" },
-  { key: "PENDING", label: "Хүлээгдэж буй", color: "amber" },
+  { key: "CONFIRMED", label: "Баталгаажсан", color: "mauve" },
   { key: "CANCELLED", label: "Цуцлагдсан", color: "rose" },
   { key: "BLOCKED", label: "Завгүй", color: "gray" },
   { key: "ALL", label: "Бүгд", color: "mauve" },
@@ -116,6 +116,11 @@ export default function AdminBookingsClient() {
         bg: "bg-rose-50 border-rose-100",
         text: "text-rose-500",
         label: "Цуцлагдсан",
+      },
+      CONFIRMED: {
+        bg: "bg-blue-50 border-blue-100",
+        text: "text-blue-600",
+        label: "Баталгаажсан",
       },
       BLOCKED: {
         bg: "bg-foreground border-foreground",

@@ -22,6 +22,14 @@ import {
 } from "@/lib/actions";
 import type { BookingStatusValue } from "@/lib/booking-status";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Plus,
   Calendar as CalendarIcon,
   Clock,
@@ -69,6 +77,9 @@ export default function AdminSchedulerClient({
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   );
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [blockTargetSlot, setBlockTargetSlot] = useState<Date | null>(null);
+  const [blockDuration, setBlockDuration] = useState("60");
 
   const [formData, setFormData] = useState({
     serviceId: services[0]?.id || "",
@@ -149,6 +160,9 @@ export default function AdminSchedulerClient({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["available-slots"] });
+      setBlockDialogOpen(false);
+      setBlockTargetSlot(null);
+      setBlockDuration("60");
       toast.success("Цаг амжилттай блоклолоо");
     },
     onError: (error: Error) => {
@@ -178,25 +192,26 @@ export default function AdminSchedulerClient({
     rescheduleMutation.mutate({ id: bookingId, newStartTime: newTime });
   };
 
-  const handleBlockSlot = async (slot: Date) => {
+  const handleBlockSlot = (slot: Date) => {
     if (!formData.serviceId) return;
+    setBlockTargetSlot(slot);
+    setBlockDuration("60");
+    setBlockDialogOpen(true);
+  };
 
-    const durationStr = window.prompt(
-      "Блок хийх хугацааг минутаар оруулна уу:",
-      "60",
-    );
-    if (durationStr === null) return; // User cancelled
+  const handleConfirmBlockSlot = () => {
+    if (!blockTargetSlot || !formData.serviceId) return;
 
-    const duration = parseInt(durationStr, 10);
+    const duration = parseInt(blockDuration, 10);
     if (isNaN(duration) || duration <= 0) {
-      alert("Зөв хугацаа оруулна уу.");
+      toast.error("Зөв хугацаа оруулна уу.");
       return;
     }
 
     blockMutation.mutate({
       serviceId: formData.serviceId,
-      startTime: slot,
-      duration: duration,
+      startTime: blockTargetSlot,
+      duration,
     });
   };
 
@@ -340,6 +355,8 @@ export default function AdminSchedulerClient({
                               className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
                                 booking.status === "PAID"
                                   ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                  : booking.status === "CONFIRMED"
+                                    ? "bg-blue-50 text-blue-600 border-blue-100"
                                   : booking.status === "BLOCKED"
                                     ? "bg-foreground text-white border-foreground"
                                     : "bg-peach/30 text-mauve border-mauve/20"
@@ -347,6 +364,8 @@ export default function AdminSchedulerClient({
                             >
                               {booking.status === "PAID"
                                 ? "Төлөгдсөн"
+                                : booking.status === "CONFIRMED"
+                                  ? "Баталгаажсан"
                                 : booking.status === "BLOCKED"
                                   ? "Завгүй"
                                   : "Хүлээгдэж буй"}
@@ -630,6 +649,52 @@ export default function AdminSchedulerClient({
           )}
         </div>
       </div>
+
+      <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Цаг блоклох</DialogTitle>
+            <DialogDescription>
+              {blockTargetSlot
+                ? `${format(blockTargetSlot, "yyyy.MM.dd HH:mm", { locale: mn })} цагийг хэдэн минутаар блоклох вэ?`
+                : "Блоклох хугацаагаа оруулна уу."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-dusty">
+              Хугацаа (минут)
+            </label>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={blockDuration}
+              onChange={(e) => setBlockDuration(e.target.value)}
+              className="w-full rounded-xl border border-rose-soft/50 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-mauve"
+              placeholder="60"
+            />
+          </div>
+
+          <DialogFooter className="bg-transparent border-t-0 p-0 -mx-0 -mb-0">
+            <button
+              type="button"
+              onClick={() => setBlockDialogOpen(false)}
+              className="h-10 rounded-lg border border-rose-soft/60 px-4 text-sm font-bold text-dusty hover:bg-blush/20 transition-colors"
+            >
+              Болих
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmBlockSlot}
+              disabled={blockMutation.isPending}
+              className="h-10 rounded-lg bg-mauve px-4 text-sm font-bold text-white hover:bg-accent-dark transition-colors disabled:opacity-50"
+            >
+              {blockMutation.isPending ? "Блоклож байна..." : "Блоклох"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

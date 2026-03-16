@@ -104,6 +104,9 @@ export async function getBookings(params: {
 
   if (params.status && params.status !== "ALL") {
     where.status = params.status;
+  } else {
+    // Hide unpaid pending records from booking management views.
+    where.status = { not: "PENDING" };
   }
 
   if (params.search && params.search.trim()) {
@@ -137,6 +140,9 @@ export async function getBookings(params: {
 export async function getAdminBookings() {
   await checkAdmin();
   const bookings = await prisma.booking.findMany({
+    where: {
+      status: { not: "PENDING" },
+    },
     include: { service: true },
     orderBy: { startTime: "asc" },
   });
@@ -186,7 +192,8 @@ export async function createBooking(data: {
         customerPhone: validated.customerPhone,
         startTime: startTime,
         endTime: endTime,
-        status: "PENDING",
+        // Admin manual bookings are immediately valid without online payment.
+        status: "CONFIRMED",
       },
     });
   });

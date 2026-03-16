@@ -171,6 +171,21 @@ export async function GET(req: Request) {
     ) {
       c.delete("pendingBookingId");
     }
+
+    const idToSearch = String(transactionId);
+    const bookingById = await prisma.booking.findUnique({
+      where: { id: idToSearch },
+      select: { id: true, status: true },
+    });
+    const bookingByPaymentId = bookingById
+      ? null
+      : await prisma.booking.findFirst({
+          where: { paymentId: idToSearch },
+          select: { id: true, status: true },
+        });
+
+    const booking = bookingById || bookingByPaymentId;
+
     const headersList = await headers();
     const host =
       headersList.get("x-forwarded-host") ||
@@ -179,7 +194,15 @@ export async function GET(req: Request) {
     const protocol = headersList.get("x-forwarded-proto") || "https";
     const baseUrl = `${protocol}://${host}`;
 
-    const redirectUrl = new URL(`/book/success/${transactionId}`, baseUrl);
+    if (!booking) {
+      return NextResponse.redirect(new URL("/", baseUrl));
+    }
+
+    const isPaid = booking.status === "PAID";
+    const redirectPath = isPaid
+      ? `/book/success/${booking.id}`
+      : `/book/payment/${booking.id}`;
+    const redirectUrl = new URL(redirectPath, baseUrl);
 
     // Safety check for localhost in production
     if (
