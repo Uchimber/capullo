@@ -467,7 +467,7 @@ export async function getAvailableSlots(
       slots.push(new Date(currentSlot));
     }
 
-    currentSlot = addMinutes(currentSlot, 30); // 30 min intervals
+    currentSlot = addMinutes(currentSlot, 60); // 60 min intervals
   }
 
   return slots;
