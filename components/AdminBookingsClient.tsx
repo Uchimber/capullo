@@ -34,11 +34,11 @@ interface Booking {
 }
 
 const STATUS_TABS = [
-  { key: "PAID", label: "Төлөгдсөн", color: "emerald" },
-  { key: "CONFIRMED", label: "Баталгаажсан", color: "mauve" },
-  { key: "CANCELLED", label: "Цуцлагдсан", color: "rose" },
-  { key: "BLOCKED", label: "Завгүй", color: "gray" },
-  { key: "ALL", label: "Бүгд", color: "mauve" },
+  { key: "PAID", label: "Төлөгдсөн", shortLabel: "Төлсөн", color: "emerald" },
+  { key: "CONFIRMED", label: "Баталгаажсан", shortLabel: "Баталгаа", color: "mauve" },
+  { key: "CANCELLED", label: "Цуцлагдсан", shortLabel: "Цуцалт", color: "rose" },
+  { key: "BLOCKED", label: "Завгүй", shortLabel: "Завгүй", color: "gray" },
+  { key: "ALL", label: "Бүгд", shortLabel: "Бүгд", color: "mauve" },
 ];
 
 export default function AdminBookingsClient() {
@@ -128,33 +128,44 @@ export default function AdminBookingsClient() {
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-24">
       <header className="space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
           Бүх <span className="text-mauve">захиалгууд</span>
         </h1>
-        <p className="text-dusty font-medium text-sm">
+        <p className="text-dusty font-medium text-xs sm:text-sm">
           Нийт захиалгын мэдээлэл болон төлөв удирдах.
         </p>
       </header>
 
       {/* Filter Tabs + Search */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-rose-soft/40 shadow-sm overflow-x-auto">
-          {STATUS_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => {
-                setActiveStatus(tab.key);
-                setPage(1);
-              }}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                activeStatus === tab.key
-                  ? "bg-mauve text-white shadow-lg shadow-mauve/20"
-                  : "text-dusty hover:text-mauve hover:bg-blush/30"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      <div className="flex flex-col gap-4 w-full min-w-0 md:flex-row md:items-center md:justify-between">
+        {/* Mobile: full-bleed horizontal scroll; snap for touch */}
+        <div className="relative w-full min-w-0 md:max-w-none -mx-1 px-1 sm:mx-0 sm:px-0">
+          <div
+            role="tablist"
+            aria-label="Захиалгын төлөв"
+            className="flex w-full min-w-0 touch-pan-x snap-x snap-mandatory gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth bg-white p-1 sm:p-1.5 sm:gap-1.5 rounded-2xl border border-rose-soft/40 shadow-sm [scrollbar-width:thin] pb-1 sm:pb-0 [-webkit-overflow-scrolling:touch] custom-scrollbar"
+          >
+            {STATUS_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={activeStatus === tab.key}
+                onClick={() => {
+                  setActiveStatus(tab.key);
+                  setPage(1);
+                }}
+                className={`shrink-0 snap-start rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition-all sm:px-5 sm:py-2.5 sm:text-xs sm:tracking-wider ${
+                  activeStatus === tab.key
+                    ? "bg-mauve text-white shadow-md shadow-mauve/20 sm:shadow-lg"
+                    : "text-dusty hover:bg-blush/30 hover:text-mauve active:scale-[0.98]"
+                }`}
+              >
+                <span className="sm:hidden">{tab.shortLabel}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <form
@@ -194,11 +205,13 @@ export default function AdminBookingsClient() {
       </div>
 
       {/* Stats Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 text-xs font-bold text-dusty">
-          <span className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-mauve" />
-            Нийт: <span className="text-foreground">{total}</span> захиалга
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-xs font-bold text-dusty min-w-0">
+          <span className="flex items-center gap-2 min-w-0">
+            <Filter className="w-3.5 h-3.5 shrink-0 text-mauve" />
+            <span className="truncate">
+              Нийт: <span className="text-foreground">{total}</span> захиалга
+            </span>
           </span>
         </div>
 
@@ -207,10 +220,10 @@ export default function AdminBookingsClient() {
             refetch();
           }}
           disabled={isFetching}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-soft/40 rounded-xl text-xs font-bold text-dusty hover:text-mauve hover:border-mauve transition-all disabled:opacity-50"
+          className="flex shrink-0 items-center justify-center gap-2 self-start px-4 py-2.5 bg-white border border-rose-soft/40 rounded-xl text-xs font-bold text-dusty hover:text-mauve hover:border-mauve transition-all disabled:opacity-50 sm:self-auto"
         >
           <RefreshCw
-            className={`w-3.5 h-3.5 ${isFetching ? "animate-spin text-mauve" : ""}`}
+            className={`w-3.5 h-3.5 shrink-0 ${isFetching ? "animate-spin text-mauve" : ""}`}
           />
           {isFetching ? "Шинэчилж байна..." : "Шинэчлэх"}
         </button>
@@ -243,7 +256,7 @@ export default function AdminBookingsClient() {
               {bookings.map((booking: Booking) => (
                 <tr
                   key={booking.id}
-                  className="hover:bg-blush/5 transition-colors group"
+                  className="hover:bg-blush/5 transition-colors"
                 >
                   <td className="px-8 py-6">
                     <div className="space-y-1.5">
@@ -285,7 +298,7 @@ export default function AdminBookingsClient() {
                   </td>
                   <td className="px-8 py-6">{statusBadge(booking.status)}</td>
                   <td className="px-8 py-6">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
+                    <div className="flex justify-end gap-2 flex-wrap">
                       {booking.status !== "PAID" &&
                         booking.status !== "BLOCKED" && (
                           <button

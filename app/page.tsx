@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Clock, ArrowRight, Phone, MapPin, Sparkles } from "lucide-react";
+import { PublicMobileNav } from "@/components/PublicMobileNav";
 
 export default async function HomePage() {
   const [services, businessSettingsData] = await Promise.all([
@@ -21,17 +22,20 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-cream flex flex-col">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-rose-soft/50 px-8 py-5 flex justify-between items-center sticky top-0 z-50">
-        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-rose-soft/50 px-4 sm:px-8 py-4 sm:py-5 flex justify-between items-center gap-3 sticky top-0 z-50">
+        <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground min-w-0">
           Capullo
-          <span className="text-mauve font-bold text-lg ml-1"></span>
+          <span className="text-mauve font-bold text-base sm:text-lg ml-1"></span>
         </h1>
-        <Link
-          href="/admin"
-          className="text-xs font-bold text-dusty hover:text-mauve transition-colors"
-        >
-          Ажилчдын нэвтрэх
-        </Link>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <Link
+            href="/admin"
+            className="hidden sm:inline text-xs font-bold text-dusty hover:text-mauve transition-colors whitespace-nowrap"
+          >
+            Ажилчдын нэвтрэх
+          </Link>
+          <PublicMobileNav />
+        </div>
       </header>
 
       <main className="flex-1 max-w-5xl mx-auto px-6 py-16 w-full space-y-20">
@@ -52,7 +56,7 @@ export default async function HomePage() {
         </section>
 
         {/* Services Grid */}
-        <section className="space-y-8">
+        <section id="services" className="space-y-8 scroll-mt-24">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service) => (
               <div
@@ -104,7 +108,7 @@ export default async function HomePage() {
         </section>
 
         {/* Contact */}
-        <section>
+        <section id="contact" className="scroll-mt-24">
           <div className="bg-white p-10 md:p-14 rounded-3xl border border-border/60 text-center space-y-10">
             <h3 className="text-3xl font-extrabold text-foreground tracking-tight">
               Холбоо <span className="text-mauve">барих</span>

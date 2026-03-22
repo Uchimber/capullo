@@ -353,7 +353,7 @@ export default function AdminSchedulerClient({
                   {currentDayBookings.map((booking: Booking) => (
                     <div
                       key={booking.id}
-                      className={`group relative bg-white rounded-4xl border p-7 hover:shadow-xl hover:-translate-y-0.5 transition-all border-l-8 ${
+                      className={`relative bg-white rounded-4xl border p-7 hover:shadow-xl hover:-translate-y-0.5 transition-all border-l-8 ${
                         booking.status === "BLOCKED"
                           ? "border-foreground border-l-foreground"
                           : "border-rose-soft/40 border-l-mauve"
@@ -406,7 +406,7 @@ export default function AdminSchedulerClient({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-4 group-hover:translate-x-0">
+                        <div className="flex items-center gap-2 flex-wrap shrink-0 w-full md:w-auto justify-start md:justify-end">
                           <button
                             onClick={() => {
                               setReschedulingId(booking.id);
